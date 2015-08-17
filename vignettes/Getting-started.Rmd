@@ -9,13 +9,24 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-First lets create some data and fit a basic model, this will introduce the format of the data required and also the basics of model fitting.  The simplest model that ef fits is 
+First lets create some data and fit a basic model, this will introduce the format of the data required and also the basics of model fitting.  The most basic sample is one in which there are 3 passes and 2 lifestages; this constitutes a single sample.
 
 ```{r}
-# Add two numbers together
-add <- function(a, b) a + b
-add(10, 20)
+# create a single electrofishing site visit with 3 passes and 2 lifestages
+ef_data <- data.frame(n     = c(100, 53, 24, 50, 26, 12),
+                   pass  = c(  1,  2,  3,  1,  2,  3),
+                   stage = c(  1,  1,  1,  2,  2,  2))
+ef_data
 ```
+
+A sensible model to fit to this is one where the capture probability is constant accross passes but varies by lifestage.  This can be acheived by
+
+```{r, eval=FALSE}
+# Fit a simple model
+m1 <- efp(n ~ 1 + factor(stage), data = ef_data)
+```
+
+
 
 
 
