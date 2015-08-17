@@ -1,0 +1,18 @@
+Package: ef
+Title: Modelling Framework for the Estimation of Salmonid Abundance in Scottish Rivers
+Version: 0.0.1
+Authors@R: as.person(c(
+    "Colin Millar <C.Millar@marlab.ac.uk> [aut, cre]",
+    "Rob Fryer <R.Fryer@marlab.ac.uk> [ctb]",
+    "Iain Malcolm <I.Malcolm@marlab.ac.uk> [ctb]"))
+Description:  The package contains set of functions to estimate capture probabilities and densities from 3 pass removal data
+Depends: 
+     R (>= 3.2.1),
+     mgcv (>= 1.8-3)
+Imports:
+    rstan
+Suggests:
+    knitr (>= 1.8)
+License: file LICENSE
+LazyData: true
+VignetteBuilder: knitr
