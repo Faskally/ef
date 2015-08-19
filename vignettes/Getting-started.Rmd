@@ -23,10 +23,10 @@ A sensible model to fit to this is one where the capture probability is constant
 
 ```{r, eval=FALSE}
 # Fit a simple model
-m1 <- efp(n ~ 1 + factor(stage), data = ef_data)
+m1 <- efp(n ~ 1 + factor(stage), data = ef_data, pass = pass)
 ```
 
-
+Notice that it is nessicary to supply the information on which electrifishing pass via the argument 'pass'. 
 
 
 
