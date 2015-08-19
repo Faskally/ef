@@ -3,5 +3,6 @@
 #' @docType package
 #' @name ef
 #' @import rstan
+#' @importFrom mgcv gam
 #'
 NULL
