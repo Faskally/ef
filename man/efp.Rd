@@ -4,13 +4,21 @@
 \alias{efp}
 \title{Estimate capture probabilites from electrofishing data}
 \usage{
-efp(formula, data = NULL, passes = NULL, verbose = TRUE, init = "0",
+efp(formula, data = NULL, pass, verbose = TRUE, init = "0",
   hessian = FALSE)
 }
 \arguments{
 \item{formula}{a formula object}
 
 \item{data}{a data.frame containing all relavent info}
+
+\item{pass}{a vector of integers giving the pass number of the observation}
+
+\item{verbose}{if TRUE stan optimiser messages are printed to the screen}
+
+\item{init}{should initialisatiom be random?}
+
+\item{hessian}{if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb}
 }
 \value{
 glm type object
