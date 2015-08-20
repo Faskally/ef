@@ -1,27 +1,21 @@
-# Sample .travis.yml for R projects.
-#
-# See README.md for instructions, or for more configuration options,
-# see the wiki:
-# https://github.com/craigcitro/r-travis/wiki
+# Sample .travis.yml for R projects from https://github.com/craigcitro/r-travis
 
-language: c
+language: r
 
-before_install:
-  - curl -OL http://raw.github.com/craigcitro/r-travis/master/scripts/travis-tool.sh
-  - chmod 755 ./travis-tool.sh
-  - ./travis-tool.sh bootstrap
+sudo: required
 
-install:
-  - ./travis-tool.sh aptget_install libgsl0-dev
-  - ./travis-tool.sh install_deps
-  - ./travis-tool.sh install_github flr/FLCore
+# Be strict when checking our package
+warnings_are_errors: true
 
-script: ./travis-tool.sh run_tests
+# System dependencies for HTTP calling
+#apt_packages:
+# - libcurl4-openssl-dev
+# - libxml2-dev
+#r_binary_packages:
+# - RUnit
+# - testthat
 
-after_failure:
-  - ./travis-tool.sh dump_logs
-
-notifications:
-  email:
-    on_success: change
-    on_failure: change
+# Install the bleeding edge version of a package from github (eg to pick
+# up a not-yet-released bugfix)
+#r_github_packages:
+# - hadley/httr
