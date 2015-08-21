@@ -22,6 +22,9 @@
 #' @export
 efp <- function(formula, data = NULL, pass, verbose = FALSE, init = "0", hessian = TRUE) {
 
+
+  .buildOptimiser()
+
   # some checks
   if (is.null(data)) stop("must supply data")
 

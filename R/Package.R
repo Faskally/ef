@@ -4,5 +4,6 @@
 #' @name ef
 #' @import rstan
 #' @importFrom mgcv gam
+#' @importFrom utils capture.output
 #'
 NULL

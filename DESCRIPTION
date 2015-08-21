@@ -10,6 +10,7 @@ Authors@R: c(person(c("Colin", "P."), "Millar", role = c("aut", "cre"),
 Description: A set of functions to estimate capture probabilities and densities from 3 pass removal data.
 Depends: 
      R (>= 3.2.1),
+     utils,
      mgcv (>= 1.8-3)
 Imports:
     rstan
