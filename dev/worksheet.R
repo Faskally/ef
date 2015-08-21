@@ -2,6 +2,8 @@
 
 
 pkg <- devtools::as.package("~/work/faskally/ef")
+pkg <- devtools::as.package("c:/work/repos/faskally/ef")
+
 
 ## tools:
 devtools::document(pkg)
