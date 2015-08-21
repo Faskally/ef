@@ -1,10 +1,12 @@
 Package: ef
 Title: Modelling Framework for the Estimation of Salmonid Abundance in Scottish Rivers
 Version: 0.0.1
-Authors@R: as.person(c(
-    "Colin Millar <C.Millar@marlab.ac.uk> [aut, cre]",
-    "Rob Fryer <R.Fryer@marlab.ac.uk> [ctb]",
-    "Iain Malcolm <I.Malcolm@marlab.ac.uk> [ctb]"))
+Authors@R: c(person(c("Colin", "P."), "Millar", role = c("aut", "cre"), 
+                    email = "C.Millar@marlab.ac.uk"),
+             person(c("Rob", "J."), "Fryer", role = "ctb", 
+                    email = "R.Fryer@marlab.ac.uk")
+             person(c("Iain", "A."), "Malcolm", role = "ctb", 
+                    email = "I.Malcolm@marlab.ac.uk"))
 Description: A set of functions to estimate capture probabilities and densities from 3 pass removal data.
 Depends: 
      R (>= 3.2.1),
