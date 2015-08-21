@@ -4,8 +4,8 @@
 \alias{efp}
 \title{Estimate capture probabilites from electrofishing data}
 \usage{
-efp(formula, data = NULL, pass, verbose = TRUE, init = "0",
-  hessian = FALSE)
+efp(formula, data = NULL, pass, verbose = FALSE, init = "0",
+  hessian = TRUE)
 }
 \arguments{
 \item{formula}{a formula object}

@@ -5,7 +5,7 @@
 
 .onLoad <- function(libname, pkgname) 
 {
-  message("Building optimiser for first use...")
+  packageStartupMessage("Building optimiser for first use...")
 
   stanmod <- rstan::stan_model(model_code = "
       data {
