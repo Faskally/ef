@@ -4,9 +4,9 @@
 .efEnv <- new.env()
 
 
-.buildOptimiser <- function() {
+.buildOptimiser <- function(force = FALSE) {
 
-  if (exists(.efEnv $ stanmod)) return (invisible(FALSE))
+  if (exists("stanmod", envir = .efEnv) & !force) return (invisible(FALSE))
 
   message("Building optimiser for first use...")
 
@@ -15,6 +15,7 @@
         int<lower=0> N; // number of observations
         int<lower=0> K; // number of parameters
         row_vector[N] y[3]; // data - 3 passes 
+        vector[N] offset[3]; // offset - 3 passes 
         matrix[N,K] A[3]; // the design matrices - 3 passes 
       }
       parameters {
@@ -22,8 +23,8 @@
       } 
       model {
         vector[N] p[3]; // calculate all the probs required
-        for (k in 1:3) {
-          p[k] <- 1.0 ./ (1.0 + exp(-1.0 * A[k] * alpha)); 
+        for (s in 1:3) {
+          p[s] <- 1.0 ./ (1.0 + exp(-1.0 * A[s] * alpha - offset[s])); 
         }
         increment_log_prob(y[1] * log(p[1])); 
         increment_log_prob(y[2] * log((1-p[1]) .* p[2]));

@@ -4,8 +4,8 @@
 \alias{efp}
 \title{Estimate capture probabilites from electrofishing data}
 \usage{
-efp(formula, data = NULL, pass, verbose = FALSE, init = "0",
-  hessian = TRUE)
+efp(formula, data = NULL, pass, offset = NULL, verbose = FALSE,
+  init = "0", hessian = TRUE)
 }
 \arguments{
 \item{formula}{a formula object}
@@ -13,6 +13,8 @@ efp(formula, data = NULL, pass, verbose = FALSE, init = "0",
 \item{data}{a data.frame containing all relavent info}
 
 \item{pass}{a vector of integers giving the pass number of the observation}
+
+\item{offset}{an possible offset for the linear predictor of capture probability}
 
 \item{verbose}{if TRUE stan optimiser messages are printed to the screen}
 

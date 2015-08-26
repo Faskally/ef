@@ -2,6 +2,7 @@
 
 export(efp)
 export(invlogit)
+export(logit)
 export(transpar)
 import(rstan)
 importFrom(mgcv,gam)

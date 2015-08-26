@@ -15,12 +15,13 @@
 #' @param formula a formula object
 #' @param data a data.frame containing all relavent info
 #' @param pass a vector of integers giving the pass number of the observation
+#' @param offset an possible offset for the linear predictor of capture probability
 #' @param verbose if TRUE stan optimiser messages are printed to the screen
 #' @param init should initialisatiom be random?
 #' @param hessian if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb
 #' @return glm type object
 #' @export
-efp <- function(formula, data = NULL, pass, verbose = FALSE, init = "0", hessian = TRUE) {
+efp <- function(formula, data = NULL, pass, offset = NULL, verbose = FALSE, init = "0", hessian = TRUE) {
 
 
   .buildOptimiser()
@@ -35,6 +36,11 @@ efp <- function(formula, data = NULL, pass, verbose = FALSE, init = "0", hessian
   if (length(unique(pass)) != 3 || !all(sort(unique(pass)) == 1:3)) stop("There should only be 3 passes and they should be numbered 1 to 3")
   # the within sample structure is then,
   X <- model.matrix(~ factor(pass) - 1)
+
+  # set up offset
+  if (is.null(offset)) {
+    offset <- rep(0, nrow(data))
+  }
 
   # set up model
   Gsetup <- gam(formula, data = data, fit = FALSE)
@@ -61,6 +67,9 @@ efp <- function(formula, data = NULL, pass, verbose = FALSE, init = "0", hessian
   y <- Gsetup $ y[yord]
   dim(y) <- c(N, 3)
   y <- aperm(y, c(2,1))
+  # get offset in the correct order
+  dim(offset) <- c(N, 3)
+  offset <- aperm(offset, c(2,1))
   # same for design matrix, but this is a bit trickier
   A <- t(Gfit[row(X)[as.logical(X)],])
   dim(A) <- c(K, N, 3)
@@ -70,7 +79,8 @@ efp <- function(formula, data = NULL, pass, verbose = FALSE, init = "0", hessian
     list(N = N,  
          K = K,
          y = y,
-         A = A)
+         A = A,
+         offset = offset)
 
   if (!verbose) {
     tmp <- 

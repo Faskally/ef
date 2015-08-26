@@ -37,7 +37,7 @@ hessian = TRUE
 verbose = TRUE
 init = "0"
 
-m1 <- efp(n ~ 1 + factor(stage), data = ef_data)
+m1 <- efp(n ~ 1 + factor(stage), data = ef_data, pass = pass)
 m1
 
 
