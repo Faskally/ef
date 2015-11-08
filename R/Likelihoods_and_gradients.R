@@ -180,6 +180,7 @@ efp_old <- function(formula, data = NULL, pass, offset = NULL, verbose = FALSE, 
 #' cbind(ef_data2, fit = fitted(m3))
 #' m4 <- ef::efp(n ~ 1 + factor(stage), data = ef_data3, pass = pass, id = sample)
 #' cbind(ef_data3, fit = fitted(m4))
+#' @export
 efp <- function(formula, data = NULL, pass, id, offset = NULL, verbose = FALSE, init = "0", hessian = TRUE, fit = TRUE) {
 
   .buildOptimiser2()
