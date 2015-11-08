@@ -16,7 +16,7 @@ First lets create some data and fit a basic model, this will introduce the forma
 ef_data <- data.frame(n      = c(100, 53, 24, 50, 26, 12),
                       pass   = c(  1,  2,  3,  1,  2,  3),
                       stage  = c(  1,  1,  1,  2,  2,  2),
-                      sample = c(  1,  1,  1,  1,  1,  1))
+                      sample = c(  1,  1,  1,  2,  2,  2))
 ef_data
 ```
 

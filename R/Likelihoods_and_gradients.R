@@ -144,45 +144,42 @@ efp_old <- function(formula, data = NULL, pass, offset = NULL, verbose = FALSE, 
 #' @param hessian if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb
 #' @param fit if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned
 #' @return glm type object
-# create two electrofishing site visits with 3 and 4 passes and 2 lifestages
-ef_data <- data.frame(n      = c(100, 53, 24, 50, 26, 12,
-                                 100, 53, 24, 50, 26, 12),
-                      pass   = c(  1,  2,  3,  1,  2,  3,
-                                   1,  2,  3,  1,  2,  3),
-                      stage  = c(  1,  1,  1,  2,  2,  2,
-                                   1,  1,  1,  2,  2,  2),
-                      sample = c(  1,  1,  1,  2,  2,  2,
-                                   3,  3,  3,  4,  4,  4))
-
-ef_data2 <- data.frame(n      = c(100, 53, 24, 50, 26, 12,
-                                  100, 53, 24, 12, 50, 26, 12, 6),
-                       pass   = c(  1,  2,  3,  1,  2,  3,
-                                    1,  2,  3,  4,  1,  2,  3, 4),
-                       stage  = c(  1,  1,  1,  2,  2,  2,
-                                    1,  1,  1,  1,  2,  2,  2, 2),
-                       sample = c(  1,  1,  1,  2,  2,  2,
-                                    3,  3,  3,  3,  4,  4,  4, 4))
-
-ef_data3 <- data.frame(n      = c(100, 53, 24, 50, 26, 12, 40,
-                                  100, 53, 24, 12, 50, 26, 12, 6, 40),
-                       pass   = c(  1,  2,  3,  1,  2,  3, 1,
-                                    1,  2,  3,  4,  1,  2,  3, 4, 1),
-                       stage  = c(  1,  1,  1,  2,  2,  2, 1,
-                                    1,  1,  1,  1,  2,  2,  2, 2, 2),
-                       sample = c(  1,  1,  1,  2,  2,  2, 5,
-                                    3,  3,  3,  3,  4,  4,  4, 4, 6))
-
-
-# Fit a simple model
-devtools::load_all(pkg)
-m2 <- efp(n ~ 1 + factor(stage), data = ef_data, pass = pass, id = sample)
-cbind(ef_data, fit = fitted(m2))
-
-m3 <- efp(n ~ 1 + factor(stage), data = ef_data2, pass = pass, id = sample)
-cbind(ef_data2, fit = fitted(m3))
-
-m4 <- efp(n ~ 1 + factor(stage), data = ef_data3, pass = pass, id = sample)
-cbind(ef_data3, fit = fitted(m4))
+#' @examples
+#' # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
+#' ef_data <- data.frame(n      = c(100, 53, 24, 50, 26, 12,
+#'                                  100, 53, 24, 50, 26, 12),
+#'                       pass   = c(  1,  2,  3,  1,  2,  3,
+#'                                    1,  2,  3,  1,  2,  3),
+#'                       stage  = c(  1,  1,  1,  2,  2,  2,
+#'                                    1,  1,  1,  2,  2,  2),
+#'                       sample = c(  1,  1,  1,  2,  2,  2,
+#'                                    3,  3,  3,  4,  4,  4))
+#'
+#' ef_data2 <- data.frame(n      = c(100, 53, 24, 50, 26, 12,
+#'                                   100, 53, 24, 12, 50, 26, 12, 6),
+#'                        pass   = c(  1,  2,  3,  1,  2,  3,
+#'                                     1,  2,  3,  4,  1,  2,  3, 4),
+#'                        stage  = c(  1,  1,  1,  2,  2,  2,
+#'                                     1,  1,  1,  1,  2,  2,  2, 2),
+#'                        sample = c(  1,  1,  1,  2,  2,  2,
+#'                                     3,  3,  3,  3,  4,  4,  4, 4))
+#'
+#' ef_data3 <- data.frame(n      = c(100, 53, 24, 50, 26, 12, 40,
+#'                                   100, 53, 24, 12, 50, 26, 12, 6, 40),
+#'                        pass   = c(  1,  2,  3,  1,  2,  3, 1,
+#'                                     1,  2,  3,  4,  1,  2,  3, 4, 1),
+#'                        stage  = c(  1,  1,  1,  2,  2,  2, 1,
+#'                                     1,  1,  1,  1,  2,  2,  2, 2, 2),
+#'                        sample = c(  1,  1,  1,  2,  2,  2, 5,
+#'                                     3,  3,  3,  3,  4,  4,  4, 4, 6))
+#'
+#' # Fit a simple model
+#' m2 <- ef::efp(n ~ 1 + factor(stage), data = ef_data, pass = pass, id = sample)
+#' cbind(ef_data, fit = fitted(m2))
+#' m3 <- ef::efp(n ~ 1 + factor(stage), data = ef_data2, pass = pass, id = sample)
+#' cbind(ef_data2, fit = fitted(m3))
+#' m4 <- ef::efp(n ~ 1 + factor(stage), data = ef_data3, pass = pass, id = sample)
+#' cbind(ef_data3, fit = fitted(m4))
 efp <- function(formula, data = NULL, pass, id, offset = NULL, verbose = FALSE, init = "0", hessian = TRUE, fit = TRUE) {
 
   .buildOptimiser2()

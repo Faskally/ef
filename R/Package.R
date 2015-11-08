@@ -3,6 +3,7 @@
 #' @docType package
 #' @name ef
 #' @import rstan
+#' @import Rcpp
 #' @importFrom mgcv gam
 #' @importFrom utils capture.output
 #'
