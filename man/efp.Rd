@@ -69,5 +69,26 @@ m3 <- ef::efp(n ~ 1 + factor(stage), data = ef_data2, pass = pass, id = sample)
 cbind(ef_data2, fit = fitted(m3))
 m4 <- ef::efp(n ~ 1 + factor(stage), data = ef_data3, pass = pass, id = sample)
 cbind(ef_data3, fit = fitted(m4))
+
+# create two electrofishing site visits with 3 and 4 passes and 2 lifestages
+ef_data <- data.frame(n      = c(200, 53, 24, 100, 26, 12,
+                                 200, 53, 24, 100, 26, 12),
+                      pass   = c(  1,  2,  3,  1,  2,  3,
+                                   1,  2,  3,  1,  2,  3),
+                      stage  = c(  1,  1,  1,  2,  2,  2,
+                                   1,  1,  1,  2,  2,  2),
+                      sample = c(  1,  1,  1,  2,  2,  2,
+                                   3,  3,  3,  4,  4,  4))
+# Fit a simple model
+m2 <- efp(n ~ 1 + factor(stage) + factor(replace(pass, pass> 2, 2)), data = ef_data, pass = pass, id = sample)
+out <- cbind(ef_data, p = fitted(m2, type = "p"), pi = fitted(m2, type = "pi"))
+out
+
+# to get offset for fitting density do this
+m2$piT
+
+msim2 <- simulate(m2, nsim = 1)
+library(rstan)
+plot(msim2, pars = "p")
 }
 

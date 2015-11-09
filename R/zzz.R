@@ -57,7 +57,7 @@
     parameters {
        vector[K] alpha;
     }
-    model {
+    transformed parameters {
       vector[N] p[s];
       vector[N] pi[s];
       vector[N] piT;
@@ -80,6 +80,8 @@
           piT[i] <- piT[i] + pi[j,i];
         }
       }
+    }
+    model {
       // calculate the probability of capture - needs number of passes
       for (i in 1:s) {
         increment_log_prob(y[i] * log(pi[i]));
