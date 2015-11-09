@@ -32,7 +32,7 @@
         increment_log_prob(-1.0 * (y[1] + y[2] + y[3]) * log(p[1] + (1-p[1]) .* p[2] + (1-p[1]) .* (1-p[2]) .* p[3]));
       }")
 
-  assign("stanmod", stanmod, .efEnv)
+  assign("stanmod", stanmod, env = .efEnv)
 
   invisible(TRUE)
 }
@@ -50,7 +50,7 @@
       int<lower=0> s; // max number of passes
       int<lower=0> npasses[N]; // number of passes per observation - vectors of s passes
       row_vector[N] y[s]; // data - vectors of s passes
-      row_vector[N] T; // data - total catch
+      row_vector[N] yT; // data - total catch
       vector[N] offset[s]; // offset - s passes
       matrix[N,K] A[s]; // the design matrices - one for each pass
     }
@@ -86,7 +86,7 @@
       for (i in 1:s) {
         increment_log_prob(y[i] * log(pi[i]));
       }
-      increment_log_prob(-1.0 * T * log(piT));
+      increment_log_prob(-1.0 * yT * log(piT));
     }")
 
   assign("stanmod2", stanmod2, .efEnv)

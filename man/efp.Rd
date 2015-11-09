@@ -80,7 +80,8 @@ ef_data <- data.frame(n      = c(200, 53, 24, 100, 26, 12,
                       sample = c(  1,  1,  1,  2,  2,  2,
                                    3,  3,  3,  4,  4,  4))
 # Fit a simple model
-m2 <- efp(n ~ 1 + factor(stage) + factor(replace(pass, pass> 2, 2)), data = ef_data, pass = pass, id = sample)
+m2 <- efp(n ~ 1 + factor(stage) + factor(replace(pass, pass> 2, 2)),
+          data = ef_data, pass = pass, id = sample)
 out <- cbind(ef_data, p = fitted(m2, type = "p"), pi = fitted(m2, type = "pi"))
 out
 

@@ -54,11 +54,11 @@
 #'                                     3,  3,  3,  3,  4,  4,  4, 4, 6))
 #'
 #' # Fit a simple model
-#' m2 <- ef::efp(n ~ 1 + factor(stage), data = ef_data, pass = pass, id = sample)
+#' m2 <- efp(n ~ 1 + factor(stage), data = ef_data, pass = pass, id = sample)
 #' cbind(ef_data, fit = fitted(m2))
-#' m3 <- ef::efp(n ~ 1 + factor(stage), data = ef_data2, pass = pass, id = sample)
+#' m3 <- efp(n ~ 1 + factor(stage), data = ef_data2, pass = pass, id = sample)
 #' cbind(ef_data2, fit = fitted(m3))
-#' m4 <- ef::efp(n ~ 1 + factor(stage), data = ef_data3, pass = pass, id = sample)
+#' m4 <- efp(n ~ 1 + factor(stage), data = ef_data3, pass = pass, id = sample)
 #' cbind(ef_data3, fit = fitted(m4))
 #'
 #' # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
@@ -71,7 +71,8 @@
 #'                       sample = c(  1,  1,  1,  2,  2,  2,
 #'                                    3,  3,  3,  4,  4,  4))
 #' # Fit a simple model
-#' m2 <- efp(n ~ 1 + factor(stage) + factor(replace(pass, pass> 2, 2)), data = ef_data, pass = pass, id = sample)
+#' m2 <- efp(n ~ 1 + factor(stage) + factor(replace(pass, pass> 2, 2)),
+#'           data = ef_data, pass = pass, id = sample)
 #' out <- cbind(ef_data, p = fitted(m2, type = "p"), pi = fitted(m2, type = "pi"))
 #' out
 #'
@@ -156,7 +157,7 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL, verbose = FALSE, 
          s = s,
          npasses = npasses,
          y = y,
-         T = y_tot,
+         yT = y_tot,
          offset = offset,
          A = A)
 
@@ -172,9 +173,9 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL, verbose = FALSE, 
   }
 
   # extract transformed parameters
-  p <- opt$par[ grep("^p[[][0-9][,][0-9][]]", names(opt$par)) ]
-  pi <- opt$par[ grep("^pi[[][0-9][,][0-9][]]", names(opt$par)) ]
-  piT <- opt$par[ grep("^piT[[][0-9][]]", names(opt$par)) ]
+  p <- opt$par[ grep("^p[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
+  pi <- opt$par[ grep("^pi[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
+  piT <- opt$par[ grep("^piT[[][0-9]*[]]", names(opt$par)) ]
 
   # convert to same order as input data
   Xps <- model.matrix( ~ factor(pass):factor(id) - 1)
