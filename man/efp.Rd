@@ -34,6 +34,7 @@ This function uses the marginal likelihood of capture probabilities
 to estimate model parameters
 }
 \examples{
+\dontrun{
 # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
 ef_data <- data.frame(n      = c(100, 53, 24, 50, 26, 12,
                                  100, 53, 24, 50, 26, 12),
@@ -63,11 +64,11 @@ ef_data3 <- data.frame(n      = c(100, 53, 24, 50, 26, 12, 40,
                                     3,  3,  3,  3,  4,  4,  4, 4, 6))
 
 # Fit a simple model
-m2 <- ef::efp(n ~ 1 + factor(stage), data = ef_data, pass = pass, id = sample)
+m2 <- efp(n ~ 1 + factor(stage), data = ef_data, pass = pass, id = sample)
 cbind(ef_data, fit = fitted(m2))
-m3 <- ef::efp(n ~ 1 + factor(stage), data = ef_data2, pass = pass, id = sample)
+m3 <- efp(n ~ 1 + factor(stage), data = ef_data2, pass = pass, id = sample)
 cbind(ef_data2, fit = fitted(m3))
-m4 <- ef::efp(n ~ 1 + factor(stage), data = ef_data3, pass = pass, id = sample)
+m4 <- efp(n ~ 1 + factor(stage), data = ef_data3, pass = pass, id = sample)
 cbind(ef_data3, fit = fitted(m4))
 
 # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
@@ -91,5 +92,6 @@ m2$piT
 msim2 <- simulate(m2, nsim = 1)
 library(rstan)
 plot(msim2, pars = "p")
+}
 }
 

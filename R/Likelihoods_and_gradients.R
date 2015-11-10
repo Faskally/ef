@@ -25,6 +25,7 @@
 #' @param fit if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned
 #' @return glm type object
 #' @examples
+#' \dontrun{
 #' # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
 #' ef_data <- data.frame(n      = c(100, 53, 24, 50, 26, 12,
 #'                                  100, 53, 24, 50, 26, 12),
@@ -82,6 +83,7 @@
 #' msim2 <- simulate(m2, nsim = 1)
 #' library(rstan)
 #' plot(msim2, pars = "p")
+#' }
 #' @export
 efp <- function(formula, data = NULL, pass, id, offset = NULL, verbose = FALSE, init = "0", hessian = TRUE, fit = TRUE) {
 

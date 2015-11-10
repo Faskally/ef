@@ -32,7 +32,7 @@
         increment_log_prob(-1.0 * (y[1] + y[2] + y[3]) * log(p[1] + (1-p[1]) .* p[2] + (1-p[1]) .* (1-p[2]) .* p[3]));
       }")
 
-  assign("stanmod", stanmod, env = .efEnv)
+  assign("stanmod", stanmod, envir = .efEnv)
 
   invisible(TRUE)
 }
@@ -89,7 +89,7 @@
       increment_log_prob(-1.0 * yT * log(piT));
     }")
 
-  assign("stanmod2", stanmod2, .efEnv)
+  assign("stanmod2", stanmod2, envir = .efEnv)
 
   invisible(TRUE)
 }
