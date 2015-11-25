@@ -85,7 +85,8 @@
 #' plot(msim2, pars = "p")
 #' }
 #' @export
-efp <- function(formula, data = NULL, pass, id, offset = NULL, verbose = FALSE, init = "0", hessian = TRUE, fit = TRUE) {
+efp <- function(formula, data = NULL, pass, id, offset = NULL, 
+                verbose = FALSE, init = "0", hessian = TRUE, fit = TRUE) {
 
   .buildOptimiser2()
 
