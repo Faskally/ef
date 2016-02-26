@@ -2,11 +2,12 @@
 #'
 #' @docType package
 #' @name ef
-#' @import rstan
-#' @import Rcpp
+#' @import Rcpp 
+#' @importFrom rstan optimizing
 #' @importFrom mgcv gam
 #' @importFrom utils capture.output
 #' @importFrom stats simulate
 #' @importFrom stats fitted
+#' @ImportFrom dplyr left_join
 #'
 NULL
