@@ -14,8 +14,7 @@ Depends:
     R (>= 3.2.1),
     utils,
     mgcv (>= 1.8-3),
-    Rcpp (>= 0.12.0)
-Imports:
+    Rcpp (>= 0.12.0),
     rstan (>= 2.7.0-1)
 Suggests:
     knitr (>= 1.8),
