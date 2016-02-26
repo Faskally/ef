@@ -3,6 +3,7 @@
 S3method(fitted,efp)
 S3method(simulate,efp)
 export(efp)
+export(efp3)
 export(invlogit)
 export(logit)
 export(transpar)
