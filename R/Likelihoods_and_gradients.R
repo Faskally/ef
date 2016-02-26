@@ -113,7 +113,7 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
   }
 
   # set up model
-  Gsetup <- gam(formula, data = data, fit = FALSE)
+  Gsetup <- gam(formula, data = data, fit = FALSE, drop.unused.levels = FALSE)
   G <- Gsetup $ X
   if (nrow(G) != nrow(data)) stop("I think there are NAs in your data, please check and remove them before rerunning.")
 
