@@ -268,12 +268,12 @@ as.gam <- function(object) {
 
   # assign coefficients to gam container
   g1 $ coefficients[] <- 0
-  g1 $ coefficients[whichkeep] <- m0 $ coefficients
+  g1 $ coefficients[whichkeep] <- object $ coefficients
 
   # assign variance matrix to gam container
   g1 $ Vp[] <- 0
   diag(g1 $ Vp[]) <- 1e-5
-  g1 $ Vp[whichkeep, whichkeep] <- m0 $ Vb
+  g1 $ Vp[whichkeep, whichkeep] <- object $ Vb
 
   # assign binomial family to gam container
   g1 $ family <- binomial()
