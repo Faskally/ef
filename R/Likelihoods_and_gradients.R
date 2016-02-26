@@ -7,7 +7,6 @@
 #
 
 
-
 #' Estimate capture probabilites from electrofishing data
 #'
 #' This function uses the marginal likelihood of capture probabilities
@@ -138,7 +137,7 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
   # get data in the correct order
   mat <- data.frame(pass = pass, id = id, y = Gsetup$y, offset = offset, irow = 1:length(pass))
   mat2 <- expand.grid(pass = 1:s, id = sort(unique(id)))
-  mat2 <- dplyr::left_join(mat2, mat)
+  mat2 <- dplyr::left_join(mat2, mat, by = c("pass", "id"))
   mat2[is.na(mat2$y), c("y", "offset")] <- 0
 
   # we want observations in columns, passes in rows
