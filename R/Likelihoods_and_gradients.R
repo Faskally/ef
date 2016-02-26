@@ -136,11 +136,11 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
 
   # get data in the correct order
   mat <- data.frame(pass = pass, id = id, y = Gsetup$y, offset = offset, irow = 1:length(pass))
-  mat2 <- expand.grid(id = 1:ncol(Xs), pass = 1:s)
-  mat2 <- merge(mat2, mat, all.x = TRUE)
+  mat2 <- expand.grid(pass = 1:s, id = sort(unique(id)))
+  mat2 <- dplyr::left_join(mat2, mat)
   mat2[is.na(mat2$y), c("y", "offset")] <- 0
 
-  # we want observartions in columns, passes in rows
+  # we want observations in columns, passes in rows
   y <- matrix(mat2$y, nrow = s, ncol = N)
   y_tot <- colSums(y)
 
@@ -150,7 +150,8 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
   # same for design matrix, but this is a bit trickier
   A <- array(0, c(s, N, K))
   for (i in 1:N) {
-    .irow <- subset(mat2, id == i)$irow
+    iid <- sort(unique(id))[i]
+    .irow <- subset(mat2, id == iid)$irow
     A[!is.na(.irow),i,] <- Gfit[.irow[!is.na(.irow)],]
   }
 
