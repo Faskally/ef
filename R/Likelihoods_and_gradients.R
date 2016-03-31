@@ -103,8 +103,8 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
   # if (length(unique(pass)) != 3 || !all(sort(unique(pass)) == 1:3)) stop("There should only be 3 passes and they should be numbered 1 to 3")
   # sort data by sample id then pass?
   # the within sample structure is then,
-  Xs <- model.matrix(~ factor(id)  - 1)
-  Xp <- model.matrix(~ factor(pass)  - 1)
+  Xs <- Matrix::sparse.model.matrix(~ factor(id)  - 1)
+  Xp <- Matrix::sparse.model.matrix(~ factor(pass)  - 1)
 
   # set up offset
   if (is.null(offset)) {
@@ -129,7 +129,7 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
   }
 
   # define inputs for likelihood
-  npasses <- colSums(Xs)
+  npasses <- Matrix::colSums(Xs)
   N <- ncol(Xs)
   K <- ncol(Gfit)
   s <- max(npasses)
@@ -182,9 +182,13 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
   piT <- opt$par[ grep("^piT[[][0-9]*[]]", names(opt$par)) ]
 
   # convert to same order as input data
-  Xps <- model.matrix( ~ factor(pass):factor(id) - 1)
-  opt $ p <- as.vector(Xps %*% p)
-  opt $ pi <- as.vector(Xps %*% pi)
+  #Xps <- Matrix::sparse.model.matrix( ~ factor(pass):factor(id) - 1)
+  #opt $ p <- as.vector(Xps %*% p)
+  #opt $ pi <- as.vector(Xps %*% pi)
+  #opt $ piT <- data.frame(id = 1:N, piT = piT, total = y_tot)
+  ordering <- as.numeric(factor(pass)) + (as.numeric(factor(id)) - 1) * s
+  opt $ p <- p[ordering]
+  opt $ pi <- pi[ordering]
   opt $ piT <- data.frame(id = 1:N, piT = piT, total = y_tot)
 
   # keep data for reffiting
@@ -250,6 +254,14 @@ fitted.efp <- function (object, type = "p", ...)
   }
 }
 
+
+#' Coversion of an efp fit to a gam fit for plotting
+#'
+#' Coversion of an efp fit to a gam fit for plotting
+#'
+#'
+#' @param object an efp fitted model
+#' @return gam type object
 #' @export
 as.gam <- function(object) {
   stopifnot(is(object)[1] == "efp")
@@ -283,7 +295,7 @@ as.gam <- function(object) {
 }
 
 #' @export
-model.matrix.efp <- function(object) {
+model.matrix.efp <- function(object, ...) {
   object$G
 }
 
@@ -292,7 +304,7 @@ formula.efp <- function(object, ...) {
 }
 
 #' @export
-drop1.efp <- function(object, scope, scale = 1, test = AIC) {
+drop1.efp <- function(object, scope, scale = 1, test = AIC, ...) {
 
 
   #check_exact(object)
@@ -301,7 +313,7 @@ drop1.efp <- function(object, scope, scale = 1, test = AIC) {
   iswt <- !is.null(wt <- object$weights)
   n <- nrow(x)
   #asgn <- attr(x, "assign")
-  terms <- terms(formula(best))
+  terms <- terms(formula(object))
   tl <- attr(terms, "term.labels")
   if (missing(scope))
     scope <- drop.scope(formula(object))
@@ -355,8 +367,6 @@ drop1.efp <- function(object, scope, scale = 1, test = AIC) {
 
 
 
-
-#' @export
 efp3 <- function(formula, data = NULL, pass, id, offset = NULL, Q = NULL,
                  verbose = FALSE, init = "0", hessian = TRUE, fit = TRUE) {
 

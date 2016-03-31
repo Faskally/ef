@@ -16,6 +16,10 @@ Depends:
     mgcv (>= 1.8-3),
     Rcpp (>= 0.12.0),
     rstan (>= 2.7.0-1)
+Imports:
+    Matrix,
+    dplyr,
+    stats
 Suggests:
     knitr (>= 1.8),
     inline (>= 0.3.14)
