@@ -1,3 +1,4 @@
+#' @export
 smooth.construct.rn.smooth.spec <- function (object, data, knots)
 {
   if (!is.null(object$id))
@@ -34,7 +35,7 @@ smooth.construct.rn.smooth.spec <- function (object, data, knots)
   object
 }
 
-
+#' @export
 Predict.matrix.rn.smooth <- function (object, data)
 {
   X <- object$xt$X[,ncol(object$xt$X) - object$bs.dim:1 + 1]
