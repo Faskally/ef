@@ -10,3 +10,6 @@
 inst/doc
 .Rproj.user
 ef.Rproj
+
+# folders to ignore
+dev/
