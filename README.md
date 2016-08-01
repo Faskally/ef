@@ -5,7 +5,7 @@
 ef
 ======
 
-ef implements functions that .
+ef implements functions to estimate capture probabilities and densities from multipass pass removal data.
 
 ef is implemented as an [R](https://www.r-project.org) package and available on
 [github](https://https://github.com/Faskally/ef).
