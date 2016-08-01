@@ -1,35 +1,25 @@
-###########################################
-#
-# ESTIMATING OVERDISPERSION
-#
-###########################################
 
-# Complete function for returning overdispersion estimates
-
-
-# DEPENDENCIES
-# ef
-# dplyr
-
-
-# NOTE - ensure column names in function call are in inverted
-#        commas
-
-
-# REQUIRED FIELDS:
-#   data = dataframe containing EF data
-#   siteID = site name or unique ID
-#   visitID = a number identifying each unique visit
-#   count = count of fish (defaults to "count")
-#   pass = the EF pass number(defaults to "pass")
-#   pass12 = categorical variable with 2 levels where the 1st pass
-#            and subsequent passes are treated separately (defaults to "pass12")
-#   id = sample ID
-#   largemodel = the large model that captures most of the systematic
-#                variation in the data - this is specified before
-#                running the overdispersion function
-
-
+#' Estimating overdispersion
+#'
+#' Complete function for returning overdispersion estimates
+#'
+#'
+#' @param data dataframe containing EF data
+#' @param siteID site name or unique ID
+#' @param visitID a number identifying each unique visit
+#' @param count count of fish (defaults to "count")
+#' @param pass the EF pass number (defaults to "pass")
+#' @param lifestage the lifestage (defaults to "lifestage")
+#' @param pass12 categorical variable with 2 levels where the 1st pass
+#'            and subsequent passes are treated separately (defaults to "pass12")
+#' @param id sample ID
+#' @param largemodel the large model that captures most of the systematic
+#'                variation in the data - this is specified before
+#'               running the overdispersion function
+#' @return a data.frame summarising overdispersion
+#'
+#' @note ensure column names in function call are in inverted commas
+#'
 #' @export
 overdispersion <- function(data, siteID, visitID, count = "count",
                            pass = "pass", lifestage = "lifestage",
@@ -315,27 +305,25 @@ overdispersion <- function(data, siteID, visitID, count = "count",
 }
 
 
-#################################################################################################
-#################################################################################################
-#################################################################################################
-#################################################################################################
-#################################################################################################
-#################################################################################################
-#################################################################################################
-#################################################################################################
 
-####################
-#
-# ADJUSTED BIC FUNCTION
-#
-####################
 
-# When calling the function, you need to specify the data source for
-# the model so that the number of site visits can be determined.
-# You also need to specify the output from the overdispersion model
-# to get the measure
+#' Adjusted BIC function
+#'
+#' Complete function for returning overdispersion estimates
+#'
+#'
+#' @param model a fitted ef model
+#' @param data the data used to fit the model
+#' @param overdispersion.output output form the function \link{overdispersion}
+#' @return the adjusted BIC
+#'
+#' @note When calling the function, you need to specify the data source for
+#'   the model so that the number of site visits can be determined.
+#'   You also need to specify the output from the overdispersion model
+#'   to get the measure
+#'
 #' @export
-BICadj <- function(model, data, overdispersion.output){
+BICadj <- function(model, data, overdispersion.output) {
 
     # The adjusted BIC value is calculated in a similar way to BIC, however the
   # loglikelihood of the model is divided by the measure of between sample
