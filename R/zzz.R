@@ -24,18 +24,19 @@
       model {
         vector[N] p[3]; // calculate all the probs required
         for (s in 1:3) {
-          p[s] <- 1.0 ./ (1.0 + exp(-1.0 * A[s] * alpha - offset[s]));
+          p[s] = 1.0 ./ (1.0 + exp(-1.0 * A[s] * alpha - offset[s]));
         }
-        increment_log_prob(y[1] * log(p[1]));
-        increment_log_prob(y[2] * log((1-p[1]) .* p[2]));
-        increment_log_prob(y[3] * log((1-p[1]) .* (1-p[2]) .* p[3]));
-        increment_log_prob(-1.0 * (y[1] + y[2] + y[3]) * log(p[1] + (1-p[1]) .* p[2] + (1-p[1]) .* (1-p[2]) .* p[3]));
+        target += y[1] * log(p[1]);
+        target += y[2] * log((1-p[1]) .* p[2]);
+        target += y[3] * log((1-p[1]) .* (1-p[2]) .* p[3]);
+        target += -1.0 * (y[1] + y[2] + y[3]) * log(p[1] + (1-p[1]) .* p[2] + (1-p[1]) .* (1-p[2]) .* p[3]);
       }")
 
   assign("stanmod", stanmod, envir = .efEnv)
 
   invisible(TRUE)
 }
+
 
 .buildOptimiser2 <- function(force = FALSE) {
 
@@ -63,30 +64,30 @@
       vector[N] piT;
       // calculate all the within pass probs required
       for (i in 1:s) {
-        p[i] <- 1.0 ./ (1.0 + exp(-1.0 * A[i] * alpha - offset[i]));
+        p[i] = 1.0 ./ (1.0 + exp(-1.0 * A[i] * alpha - offset[i]));
       }
       // calculate all the marginal(?) probs required
-      pi[1] <- p[1];
+      pi[1] = p[1];
       for (i in 2:s) {
-        pi[i] <- p[i];
+        pi[i] = p[i];
         for (j in 1:(i-1)) {
-          pi[i] <- pi[i] .* (1-p[j]);
+          pi[i] = pi[i] .* (1-p[j]);
         }
       }
       // calculate the probability of capture - needs number of passes
-      piT <- pi[1];
+      piT = pi[1];
       for (i in 1:N) {
         for (j in 2:npasses[i]) {
-          piT[i] <- piT[i] + pi[j,i];
+          piT[i] = piT[i] + pi[j,i];
         }
       }
     }
     model {
       // calculate the probability of capture - needs number of passes
       for (i in 1:s) {
-        increment_log_prob(y[i] * log(pi[i]));
+        target += y[i] * log(pi[i]);
       }
-      increment_log_prob(-1.0 * yT * log(piT));
+      target += -1.0 * yT * log(piT);
     }")
 
   assign("stanmod2", stanmod2, envir = .efEnv)
@@ -99,11 +100,11 @@
 
 
 .buildOptimiser3 <- function(force = FALSE) {
-  
+
   if (exists("stanmod3", envir = .efEnv) & !force) return (invisible(FALSE))
-  
+
   message("Building optimiser 3 for first use...")
-  
+
   code <-
   "data {
     int<lower=0> N; // number of multipass observations
@@ -128,33 +129,33 @@
       p[i] <- 1.0 ./ (1.0 + exp(-1.0 * A[i] * alpha - offset[i]));
     }
     // calculate all the marginal(?) probs required
-    pi[1] <- p[1];
+    pi[1] = p[1];
     for (i in 2:s) {
-      pi[i] <- p[i];
+      pi[i] = p[i];
       for (j in 1:(i-1)) {
-        pi[i] <- pi[i] .* (1-p[j]);
+        pi[i] = pi[i] .* (1-p[j]);
       }
     }
     // calculate the probability of capture - needs number of passes
-    piT <- pi[1];
+    piT = pi[1];
     for (i in 1:N) {
       for (j in 2:npasses[i]) {
-        piT[i] <- piT[i] + pi[j,i];
+        piT[i] = piT[i] + pi[j,i];
       }
     }
   }
   model {
     // calculate the probability of capture - needs number of passes
     for (i in 1:s) {
-      increment_log_prob(y[i] * log(pi[i]));
+      target += y[i] * log(pi[i]);
     }
-    increment_log_prob(-1.0 * yT * log(piT));
+    target += -1.0 * yT * log(piT);
     // add in penalty
-    increment_log_prob(-1.0 * quad_form(Q, alpha));
+    target += -1.0 * quad_form(Q, alpha);
   }"
-  
+
   stanmod3 <- rstan::stan_model(model_code = code)
-  
+
   assign("stanmod3", stanmod3, envir = .efEnv)
 
   invisible(TRUE)
@@ -164,6 +165,17 @@
 
 
 
+## these optimisers us tmb
+
+.buildTMB_dll <- function() {
+
+
+  message("Building optimiser for first use...")
+
+
+
+  invisible(TRUE)
+}
 
 
 

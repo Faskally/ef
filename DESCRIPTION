@@ -1,28 +1,24 @@
 Package: ef
 Title: Modelling Framework for the Estimation of Salmonid Abundance in Scottish
     Rivers
-Version: 0.0.2
+Version: 1.1-0
 Authors@R: c(person(c("Colin", "P."), "Millar", role = c("aut", "cre"),
                     email = "C.Millar@marlab.ac.uk"),
-             person(c("Rob", "J."), "Fryer", role = "ctb",
-                    email = "R.Fryer@marlab.ac.uk"),
-             person(c("Iain", "A."), "Malcolm", role = "ctb",
-                    email = "I.Malcolm@marlab.ac.uk"))
+             person(c("Rob", "J."), "Fryer", role = "aut"),
+             person(c("Iain", "A."), "Malcolm", role = "aut"),
+             person(c("Ross", "A."), "Glover", role = "aut"))
 Description: A set of functions to estimate capture probabilities and densities
     from multipass pass removal data.
-Depends:
-    R (>= 3.2.1),
-    utils,
-    mgcv (>= 1.8-3),
-    Rcpp (>= 0.12.0),
-    rstan (>= 2.7.0-1)
+Depends: Rcpp
 Imports:
+    methods,
+    utils,
+    stats,
+    mgcv,
     Matrix,
     dplyr,
-    stats
-Suggests:
-    knitr (>= 1.8),
-    inline (>= 0.3.14)
+    rstan
+Suggests: knitr
 License: MIT + file LICENSE
 LazyData: true
 VignetteBuilder: knitr

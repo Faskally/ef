@@ -1,21 +1,31 @@
-# Sample .travis.yml for R projects from https://github.com/craigcitro/r-travis
+# .travis.yml for ices-tools packages
+
+warnings_are_errors: false
+
+os:
+  - linux
 
 language: r
+r:
+  - oldrel
+  - release
+  - devel
 
-sudo: required
+sudo: false
 
-# Be strict when checking our package
-warnings_are_errors: true
+repos:
+  CRAN: https://cloud.r-project.org
 
-# System dependencies for HTTP calling
-#apt_packages:
-# - libcurl4-openssl-dev
-# - libxml2-dev
-#r_binary_packages:
-# - RUnit
-# - testthat
+r_packages:
+  - rmarkdown
 
-# Install the bleeding edge version of a package from github (eg to pick
-# up a not-yet-released bugfix)
-#r_github_packages:
-# - hadley/httr
+cache: packages
+
+notifications:
+  email:
+    on_success: change
+    on_failure: change
+
+branches:
+  only:
+    - master

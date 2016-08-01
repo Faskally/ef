@@ -3,15 +3,13 @@
 #' @docType package
 #' @name ef
 #' @import Rcpp
-#' @importFrom rstan optimizing
-#' @importFrom mgcv gam
-#' @importFrom mgcv smooth.construct
-#' @importFrom mgcv Predict.matrix
+#' @importFrom methods is
 #' @importFrom utils capture.output
-#' @importFrom stats simulate
-#' @importFrom stats fitted
+#' @importFrom stats simulate AIC fitted as.formula formula binomial deviance
+#' @importFrom stats update.formula drop.scope model.matrix
+#' @importFrom mgcv gam smooth.construct Predict.matrix
+#' @importFrom rstan optimizing
 #' @importFrom dplyr left_join
-#' @importFrom Matrix sparse.model.matrix
-#' @importFrom Matrix colSums
+#' @importFrom Matrix sparse.model.matrix colSums
 #'
 NULL

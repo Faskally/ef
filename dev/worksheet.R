@@ -3,6 +3,7 @@
 
 pkg <- devtools::as.package("~/work/faskally/ef")
 pkg <- devtools::as.package("c:/work/repos/faskally/ef")
+pkg <- devtools::as.package("d:/projects/ef")
 
 
 ## tools:
@@ -33,7 +34,7 @@ ef_data
 # Fit a simple model
 data <- ef_data
 formula <- n ~ 1 + factor(stage)
-hessian = TRUE 
+hessian = TRUE
 verbose = TRUE
 init = "0"
 
@@ -84,7 +85,7 @@ efp(n ~ factor(stage), data = ef_data, pass = pass, groups = stage)
 # linear pass model
 efp(n ~ pass, data = ef_data, pass = pass, groups = stage)
 # pass 2 == pass 3
-ef_data $ pass23 <- with(ef_data, replace(pass, pass>2, 2)) 
+ef_data $ pass23 <- with(ef_data, replace(pass, pass>2, 2))
 efp(n ~ factor(pass23), data = ef_data, pass = pass, groups = stage)
 
 
@@ -98,14 +99,14 @@ library(magrittr)
 data(ef)
 
 ef %<>% as_data_frame() %>%
-        filter(!is.na(Site_OBJECTID) & 
+        filter(!is.na(Site_OBJECTID) &
                !is.na(Area)          &
                Runs >= 2             &
                Stocked == "No")
 
 # restructure ef
-ef <- do.call(rbind, 
-        lapply(c("S0", "SP", "T0", "TP"), 
+ef <- do.call(rbind,
+        lapply(c("S0", "SP", "T0", "TP"),
             function(x) {
               out <- ef[c("Site_OBJECTID", "Site.Name", "Dataset", "Width", "Date", "Runs", "Area", "Trust", paste0(x, "_R", 1:6))]
               names(out) <- gsub(x, "n", names(out))
@@ -164,7 +165,7 @@ efp(n ~ factor(LifeStage), data = ef, pass = pass, groups = LifeStage)
 # linear pass model
 efp(n ~ pass, data = ef, pass = pass, groups = LifeStage)
 # pass 2 == pass 3
-ef $ pass23 <- with(ef, replace(pass, pass>2, 2)) 
+ef $ pass23 <- with(ef, replace(pass, pass>2, 2))
 efp(n ~ factor(pass23), data = ef, pass = pass, groups = LifeStage)
 
 
