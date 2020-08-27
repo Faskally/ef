@@ -25,6 +25,10 @@ jobs:
       env:
         - CXX_OLEVEL=2 CXX=clang++
 
+addons:
+  apt:
+    sources:
+      - sourceline: 'ppa:ubuntu-toolchain-r/test'
 
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y

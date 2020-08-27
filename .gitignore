@@ -12,4 +12,5 @@ inst/doc
 ef.Rproj
 
 # folders to ignore
-dev/
+/dev/
+/src/
