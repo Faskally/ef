@@ -7,7 +7,6 @@ cache: packages
 os: linux
 dist: xenial
 
-root: false
 latex: true
 
 env:
