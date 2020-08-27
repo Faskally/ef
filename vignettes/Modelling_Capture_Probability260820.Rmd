@@ -1,0 +1,187 @@
+---
+title: "Modelling Capture Probability"
+date: "26 August 2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r include=FALSE}
+library(ef)
+library(mgcv)
+library(dplyr)
+library(reshape)
+library(lattice)
+load(file="ef_data.RData")
+```
+
+# Create Required Fields for Analysis
+
+
+Create a factor for pass with separate levels for the first and subsequent passes. NOTE: Assuming the second and third pass have the same capture probability avoids problems with model identifiability ([Millar _et al_., 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017))
+
+```{r}
+ef_data $ pass12 <- factor(replace(ef_data $ pass, ef_data $ pass > 2, 2))
+```
+
+Create a sampleID for grouping EF counts together. A sample is a unique combination of site visit x species x lifestage and is required by the EF function
+
+```{r}
+ef_data $ sampleID <- as.numeric(factor(paste(ef_data $ date, ef_data $ siteID,
+                                              ef_data $ lifestage, ef_data $ species)))
+```
+
+Create a visitID for unique site visits. This is required by the overdispersion function (see below).
+
+```{r}
+ef_data $ visitID <- as.numeric(factor(paste(ef_data $ date, ef_data $ siteID)))
+```
+
+# Fit a Model
+
+
+Fit a simple model. This contains a factor for pass (2 levels), lifestage (2 levels), site (3 levels) and year (5 levels). With a larger dataset it would also be possible to add continuous variables as linear or smoothed terms providing the degrees of freedom are specified (typically up to k=3 (2 d.f.), see [Millar _et al_., 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017) for further details)
+
+```{r results = 'hide', warning = FALSE, message = FALSE}
+m1 <- efp(count ~ pass12 + lifestage + siteID + year,
+          data = ef_data, pass = pass, id = sampleID)
+```
+```{r echo = FALSE}
+m1
+```
+
+
+# Get Predicted Values for _P_
+
+
+The model needs to be reformatted to allow predictions (i.e. obtain _P_) capture probabilities, uses as.gam function.
+
+```{r results = 'hide', warning = FALSE, message = FALSE}
+m1_gam <- as.gam(m1)
+```
+
+Predict _P_ from the model to the full dataset. Note, if all the data is multi-pass then can just use fitted values. However, if you want P for both single and multi-pass data then predict to the new dataframe
+
+```{r}
+ef_data $ prob <- predict.gam(m1_gam, newdata=ef_data, type = "response")
+```
+
+
+# Obtain Cumulative Estimates of _P_ (for estimation of densities later)
+
+
+Aggregate counts by sampleID (i.e. counts of fry or parr per site visit)
+
+```{r}
+counts <- aggregate(count ~ sampleID, ef_data, sum)
+```
+
+Reshape to get capture probability by species x lifestage x site visit x pass. This facilitates the summary of _P_.
+
+```{r results = 'hide', warning = FALSE, message = FALSE}
+probs <- cast(ef_data, sampleID ~ pass)
+```
+
+Get cumulative capture probability by sampleID (see [Glover _et al_., 2018](https://www.sciencedirect.com/science/article/pii/S1470160X18303534))
+
+```{r}
+probs $ prob <- apply(probs[,2:4], 1, function(x) 1 - prod(1-x))
+```
+
+Remove individual pass capture probabilities
+
+```{r}
+probs <- select(probs, sampleID, prob) 
+```
+
+Remove pass and pass-specific data from dataframe
+
+```{r}
+densdata <- unique(select(ef_data, -count, -prob, -pass, -pass12))
+```                   
+
+Join data and cumulative counts by sampleID
+
+```{r results = 'hide', warning = FALSE, message = FALSE}
+densdata <- left_join(densdata, counts)
+```
+
+Join data and cumulative capture probability by sampleID
+
+```{r results = 'hide', warning = FALSE, message = FALSE}
+densdata <- left_join(densdata, probs)
+```
+
+# Estimate Density
+
+
+
+Density (N/m^-2^) is estimated as $\frac{counts}{area*P}$
+
+```{r}
+densdata $ Density_Estimate <- densdata $ count / (densdata $ area *
+                                                      densdata $ prob)
+```
+
+If you want to model counts directly (Poisson model), you need to have cumulative P and area in the offset. For a Poisson model the offset is $\log({area*cumulativeP})$.
+
+```{r}
+densdata $ offset <- log(densdata $ area * densdata $ prob)
+```
+
+Plot to check
+
+```{r echo = F, fig.width = 6, fig.height = 4.5}
+densdata <- densdata[order(densdata $ year), ]
+
+xyplot(Density_Estimate ~ year | lifestage, data = densdata, groups = siteID,
+       type = 'b', auto.key = T, scales = list(alternating = F),
+       xlab = "Year", ylab = expression(paste("Fish m"^-2)))
+```
+
+
+# Comparing Models
+
+
+Because electrofishing count data are typically overdispersed and because the modelling framework cannot incorpororate random effects, it it necessary to estimate the amount of overdispersion in the data and to account for this when comparing models.
+
+Overdispersion is estimated by fitting a large model that captures most of the systematic variation in the data and comparing this to a visit-wise and saturated model (see [Millar _et al_., 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017)):
+
+```{r}
+large_model <- efp(count ~ pass12 + lifestage + siteID + year,
+                   data = ef_data, pass = pass, id = sampleID)
+
+```
+
+Use the overdispersion function in the ef package and specify the data, visit ID, site ID, sample ID and the large model.
+
+```{r}
+od_estimate <- overdispersion(data = ef_data, visitID = "visitID", 
+                              siteID = "siteID", id = "sampleID", 
+                              largemodel = large_model)
+```
+
+View overdispersion estimate. The 'disp' column contains the estimates of overdispersion and the 3rd row contains the between-visit estimate that is used to adjust the BIC.
+
+```{r}
+od_estimate
+```
+
+Compare models using the adjusted BIC function (Equation 4, [Millar _et al_., 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017))
+
+  * Full model
+
+```{r}
+mfull <- efp(count ~ pass12 + lifestage + siteID + year,
+             data = ef_data, pass = pass, id = sampleID)
+
+BICadj(mfull, ef_data, od_estimate)
+```
+
+  * Model without lifestage
+
+```{r}
+mlife <- efp(count ~ pass12 + siteID + year,
+             data = ef_data, pass = pass, id = sampleID)
+
+BICadj(mlife, ef_data, od_estimate)
+```
