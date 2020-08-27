@@ -9,6 +9,5 @@
 #'
 #' @useDynLib ef, .registration=TRUE
 #'
-#'
 
 NULL

@@ -5,6 +5,15 @@ output:
   github_document:
     html_preview: false
 ---
+
+## installation
+
+To instal the `ef` package run
+```r
+remotes::install_github("faskally/ef")
+```
+
+
 ```{r include=FALSE}
 library(ef)
 library(mgcv)

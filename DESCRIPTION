@@ -11,6 +11,7 @@ Authors@R:
     person("Ross", "Glover", role = "aut"))
 Description: A set of functions to estimate capture probabilities and
   densities from multipass pass removal data.
+Depends: R (>= 3.0)
 Imports: TMB, Matrix, dplyr, methods, mgcv
 LinkingTo: TMB, RcppEigen
 Suggests: testthat
