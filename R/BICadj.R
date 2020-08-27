@@ -21,7 +21,6 @@ BICadj <- function(model, data, overdispersion.output) {
   # overdispersion, which makes it more stringent when adding or removing terms
   # from the model.
 
-  -2 * model$llik / overdispersion.output[3, 5]
-  + log(length(unique(paste(data$siteID, data$date))))
-      * length(model$coefficients)
+  -2 * model$llik / overdispersion.output[3, 5] +
+   log(length(unique(paste(data$siteID, data$date)))) * length(model$coefficients)
 }
