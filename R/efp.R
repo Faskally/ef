@@ -74,6 +74,12 @@
 #' library(rstan)
 #' plot(msim2, pars = "p")
 #' }
+#'
+#' @importFrom TMB MakeADFun sdreport
+#' @importFrom stats nlminb
+#' @importFrom Matrix sparse.model.matrix
+#' @importFrom mgcv gam
+#'
 #' @export
 efp <- function(formula, data = NULL, pass, id, offset = NULL,
                 verbose = FALSE, init = "0", hessian = TRUE, fit = TRUE) {
@@ -92,8 +98,8 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
   # if (length(unique(pass)) != 3 || !all(sort(unique(pass)) == 1:3)) stop("There should only be 3 passes and they should be numbered 1 to 3")
   # sort data by sample id then pass?
   # the within sample structure is then,
-  Xs <- Matrix::sparse.model.matrix(~ factor(id)  - 1)
-  Xp <- Matrix::sparse.model.matrix(~ factor(pass)  - 1)
+  Xs <- sparse.model.matrix(~ factor(id)  - 1)
+  Xp <- sparse.model.matrix(~ factor(pass)  - 1)
 
   # set up offset
   if (is.null(offset)) {
@@ -102,8 +108,8 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
 
   # set up model
   Gsetup <- gam(formula, data = data, fit = FALSE, drop.unused.levels = FALSE)
-  G <- Gsetup $ X
-  colnames(G) <- Gsetup $ term.names
+  G <- Gsetup$X
+  colnames(G) <- Gsetup$term.names
   if (nrow(G) != nrow(data)) stop("I think there are NAs in your data, please check and remove them before rerunning.")
 
   # remove redundant / collinear parameters
@@ -145,25 +151,40 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
   }
 
   standat <-
-    list(N = N,
-         K = K,
-         s = s,
-         npasses = npasses,
-         y = y,
-         yT = y_tot,
-         offset = offset,
-         A = A)
+    list(
+      N = N,
+      K = K,
+      S = S,
+      npasses = npasses,
+      y = y,
+      yT = y_tot,
+      offset = offset,
+      A = A
+    )
 
   if (!fit) return(standat)
 
-  if (!verbose) {
-    tmp <-
-      capture.output(
-        opt <- rstan::optimizing(.stanmodels$ ef, data = standat, algorith = "BFGS", hessian = hessian, verbose = verbose, init = init)
-      )
-  } else {
-    opt <- rstan::optimizing(.estanmodelsfEnv$ ef, data = standat, algorith = "BFGS", hessian = hessian, verbose = verbose, init = init)
-  }
+  parameters <- list(
+    alpha = rep(0, K)
+  )
+
+  obj <-
+    MakeADFun(
+      standat,
+      parameters,
+      DLL = "ef",
+      # map = map,
+      inner.control = list(maxit = 500, trace = TRUE)
+    )
+
+  opt <-
+    nlminb(
+      obj$par,
+      obj$fn,
+      obj$gr,
+      control = list(trace = 1)
+    )
+
 
   # extract transformed parameters
   p <- opt$par[ grep("^p[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
