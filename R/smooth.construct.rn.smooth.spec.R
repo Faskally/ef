@@ -34,13 +34,3 @@ smooth.construct.rn.smooth.spec <- function (object, data, knots)
   class(object) <- "rn.smooth"
   object
 }
-
-#' @export
-Predict.matrix.rn.smooth <- function (object, data)
-{
-  X <- object$xt$X[,ncol(object$xt$X) - object$bs.dim:1 + 1]
-
-  X[data[[object$term]],]
-}
-
-
