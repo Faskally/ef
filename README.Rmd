@@ -2,8 +2,8 @@
 title: "Modelling Capture Probability"
 date: "26 August 2020"
 output:
-  html_document: default
-  pdf_document: default
+  github_document:
+    html_preview: false
 ---
 ```{r include=FALSE}
 library(ef)
@@ -11,7 +11,7 @@ library(mgcv)
 library(dplyr)
 library(reshape)
 library(lattice)
-load(file="ef_data.RData")
+load(file="vignettes/ef_data.RData")
 ```
 
 # Create Required Fields for Analysis
@@ -90,14 +90,14 @@ probs $ prob <- apply(probs[,2:4], 1, function(x) 1 - prod(1-x))
 Remove individual pass capture probabilities
 
 ```{r}
-probs <- select(probs, sampleID, prob) 
+probs <- select(probs, sampleID, prob)
 ```
 
 Remove pass and pass-specific data from dataframe
 
 ```{r}
 densdata <- unique(select(ef_data, -count, -prob, -pass, -pass12))
-```                   
+```
 
 Join data and cumulative counts by sampleID
 
@@ -155,8 +155,8 @@ large_model <- efp(count ~ pass12 + lifestage + siteID + year,
 Use the overdispersion function in the ef package and specify the data, visit ID, site ID, sample ID and the large model.
 
 ```{r}
-od_estimate <- overdispersion(data = ef_data, visitID = "visitID", 
-                              siteID = "siteID", id = "sampleID", 
+od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
+                              siteID = "siteID", id = "sampleID",
                               largemodel = large_model)
 ```
 
@@ -184,4 +184,12 @@ mlife <- efp(count ~ pass12 + siteID + year,
              data = ef_data, pass = pass, id = sampleID)
 
 BICadj(mlife, ef_data, od_estimate)
+```
+
+### how to build this file
+
+this file was created using
+
+```{r eval = FALSE}
+rmarkdown::render("README.Rmd")
 ```

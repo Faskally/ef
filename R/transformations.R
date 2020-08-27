@@ -1,5 +1,3 @@
-
-
 #' Inverse logistic transformation
 #'
 #' This function transforms values on the logistic scale to values on
@@ -11,6 +9,8 @@
 invlogit <- function(x) {
   1/(1 + exp(-x))
 }
+
+
 
 #' Logistic transformation
 #'
@@ -38,4 +38,3 @@ logit <- function(p) {
 transpar <- function(par, G) {
   1/(1 + exp(-c(G %*% par)))
 }
-
