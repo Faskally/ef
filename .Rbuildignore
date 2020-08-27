@@ -4,4 +4,5 @@
 ^\.Rproj\.user$
 ^README.md$
 ^README.Rmd$
+^.travis.yml$
 ^worksheet.R$
