@@ -1,4 +1,3 @@
-
 #' Estimating overdispersion
 #'
 #' Complete function for returning overdispersion estimates
