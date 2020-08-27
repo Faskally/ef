@@ -7,7 +7,7 @@
 #' @name ef-package
 #' @aliases ef
 #'
-#' @useDynLib ef
+#' @useDynLib ef, .registration=TRUE
 #'
 #'
 

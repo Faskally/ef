@@ -20,6 +20,9 @@
 #' @note ensure column names in function call are in inverted commas
 #'
 #' @importFrom dplyr left_join
+#' @importFrom stats aggregate
+#' @importFrom stats pchisq
+#' @importFrom stats qlogis
 #'
 #' @export
 overdispersion <- function(data, siteID, visitID, count = "count",

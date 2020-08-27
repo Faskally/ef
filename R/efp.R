@@ -127,7 +127,7 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
   npasses <- Matrix::colSums(Xs)
   N <- ncol(Xs)
   K <- ncol(Gfit)
-  s <- max(npasses)
+  S <- max(npasses)
 
   # get data in the correct order
   mat <- data.frame(pass = pass, id = id, y = Gsetup$y, offset = offset, irow = 1:length(pass))
