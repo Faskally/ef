@@ -12,7 +12,7 @@ inst/doc
 ef.Rproj
 
 # folders to ignore
-/dev/
-worksheet.R
 /src/ef.dll
 /src/ef.o
+
+*.code-workspace

@@ -81,25 +81,26 @@
 #' @importFrom mgcv gam
 #'
 #' @export
-efp <- function(formula, data = NULL, pass, id, offset = NULL,
+efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
                 verbose = FALSE, init = "0", hessian = TRUE, fit = TRUE) {
 
   # some checks
   if (is.null(data)) stop("must supply data")
 
   # get pass information
-  if (missing(pass)) stop("must supply pass number")
   pass <- substitute(pass)
   pass <- eval(pass, data, environment(formula))
-  if (missing(id)) stop("must supply sample id")
+  # get id
   id <- substitute(id)
   id <- eval(id, data, environment(formula))
-  # a check of somekind? there should only be 1 pass of each pass number per sample!
-  # if (length(unique(pass)) != 3 || !all(sort(unique(pass)) == 1:3)) stop("There should only be 3 passes and they should be numbered 1 to 3")
-  # sort data by sample id then pass?
-  # the within sample structure is then,
-  Xs <- sparse.model.matrix(~ factor(id)  - 1)
-  Xp <- sparse.model.matrix(~ factor(pass)  - 1)
+
+  # for model matrices
+  if (length(unique(id)) > 1) {
+    Xs <- sparse.model.matrix(~ factor(id) - 1)
+  } else {
+    Xs <- sparse.model.matrix(~ id - 1)
+  }
+  Xp <- sparse.model.matrix(~ factor(pass) - 1)
 
   # set up offset
   if (is.null(offset)) {
@@ -130,27 +131,35 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
   s <- max(npasses)
 
   # get data in the correct order
-  mat <- data.frame(pass = pass, id = id, y = Gsetup$y, offset = offset, irow = 1:length(pass))
-  mat2 <- expand.grid(pass = 1:s, id = sort(unique(id)))
-  mat2 <- dplyr::left_join(mat2, mat, by = c("pass", "id"))
-  mat2[is.na(mat2$y), c("y", "offset")] <- 0
+  mat <-
+    dplyr::left_join(
+      expand.grid(pass = 1:s, id = sort(unique(id))),
+      data.frame(
+        pass = pass, id = id,
+        y = Gsetup$y,
+        offset = offset,
+        irow = 1:length(pass)
+      ),
+      by = c("pass", "id")
+    )
+  mat[is.na(mat$y), c("y", "offset")] <- 0
 
   # we want observations in columns, passes in rows
-  y <- matrix(mat2$y, nrow = s, ncol = N)
+  y <- matrix(mat$y, nrow = s, ncol = N)
   y_tot <- colSums(y)
 
   # same for offset
-  offset <- matrix(mat2$offset, nrow = s, ncol = N)
+  offset <- matrix(mat$offset, nrow = s, ncol = N)
 
   # same for design matrix, but this is a bit trickier
   A <- array(0, c(s, N, K))
   for (i in 1:N) {
     iid <- sort(unique(id))[i]
-    .irow <- subset(mat2, id == iid)$irow
+    .irow <- subset(mat, id == iid)$irow
     A[!is.na(.irow),i,] <- Gfit[.irow[!is.na(.irow)],]
   }
 
-  standat <-
+  efdat <-
     list(
       N = N,
       K = K,
@@ -162,16 +171,14 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
       A = A
     )
 
-  if (!fit) return(standat)
-
-  parameters <- list(
-    alpha = rep(0, K)
-  )
+  if (!fit) {
+    return(efdat)
+  }
 
   obj <-
     MakeADFun(
-      standat,
-      parameters,
+      efdat,
+      list(alpha = rep(0, K)),
       DLL = "ef",
       # map = map,
       inner.control = list(maxit = 500, trace = TRUE)
