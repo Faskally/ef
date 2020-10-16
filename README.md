@@ -2,6 +2,9 @@ Modelling Capture Probability
 ================
 26 August 2020
 
+[![Build
+Status](https://travis-ci.org/Faskally/eg.svg?branch=tmb)](https://travis-ci.org/Faskally/ef)
+
 ## installation
 
 To instal the TMB version `ef` package run
