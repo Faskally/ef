@@ -1,7 +1,8 @@
 Package: ef
 Title: Modelling Framework for the Estimation of Salmonid Abundance in
   Scottish Rivers
-Version: 1.0.1.9000
+Version: 1.0.2.9000
+Date: 2020-10-16
 Authors@R:
   c(
     person("Colin", "Millar", role = c("aut", "cre"),
