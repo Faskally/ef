@@ -4,10 +4,10 @@ Modelling Capture Probability
 
 ## installation
 
-To instal the `ef` package run
+To instal the TMB version `ef` package run
 
 ``` r
-remotes::install_github("faskally/ef")
+remotes::install_github("faskally/ef@tmb")
 ```
 
 # Create Required Fields for Analysis
