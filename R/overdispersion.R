@@ -180,7 +180,7 @@ overdispersion <- function(data, siteID, visitID, count = "count",
       mod <-
         data.frame(
           llik = as.numeric(m$llik),
-          params = as.numeric(m$coefficients)
+          params = length(m$coefficients)
         )
       out <- rbind(out, mod)
     }
