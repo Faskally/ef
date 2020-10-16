@@ -145,6 +145,8 @@ efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
   # set up output object
   out <- list()
 
+  out$tmb_report <- obj$report()
+
   # extract transformed parameters
   #p <- opt$par[ grep("^p[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
   #pi <- opt$par[ grep("^pi[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
