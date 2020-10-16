@@ -20,7 +20,7 @@ library(mgcv)
 library(dplyr)
 library(reshape)
 library(lattice)
-load(file="vignettes/ef_data.RData")
+data(ef_data)
 ```
 
 # Create Required Fields for Analysis
@@ -29,20 +29,24 @@ load(file="vignettes/ef_data.RData")
 Create a factor for pass with separate levels for the first and subsequent passes. NOTE: Assuming the second and third pass have the same capture probability avoids problems with model identifiability ([Millar _et al_., 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017))
 
 ```{r}
-ef_data $ pass12 <- factor(replace(ef_data $ pass, ef_data $ pass > 2, 2))
+ef_data$pass12 <- factor(replace(ef_data$pass, ef_data$pass > 2, 2))
 ```
 
 Create a sampleID for grouping EF counts together. A sample is a unique combination of site visit x species x lifestage and is required by the EF function
 
 ```{r}
-ef_data $ sampleID <- as.numeric(factor(paste(ef_data $ date, ef_data $ siteID,
-                                              ef_data $ lifestage, ef_data $ species)))
+ef_data$sampleID <-
+  as.numeric(
+    factor(
+      paste(ef_data$date, ef_data$siteID, ef_data$lifestage, ef_data$species)
+    )
+  )
 ```
 
 Create a visitID for unique site visits. This is required by the overdispersion function (see below).
 
 ```{r}
-ef_data $ visitID <- as.numeric(factor(paste(ef_data $ date, ef_data $ siteID)))
+ef_data$visitID <- factor(paste(ef_data$date, ef_data$siteID))
 ```
 
 # Fit a Model
@@ -51,8 +55,11 @@ ef_data $ visitID <- as.numeric(factor(paste(ef_data $ date, ef_data $ siteID)))
 Fit a simple model. This contains a factor for pass (2 levels), lifestage (2 levels), site (3 levels) and year (5 levels). With a larger dataset it would also be possible to add continuous variables as linear or smoothed terms providing the degrees of freedom are specified (typically up to k=3 (2 d.f.), see [Millar _et al_., 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017) for further details)
 
 ```{r results = 'hide', warning = FALSE, message = FALSE}
-m1 <- efp(count ~ pass12 + lifestage + siteID + year,
-          data = ef_data, pass = pass, id = sampleID)
+m1 <-
+  efp(
+    count ~ pass12 + lifestage + siteID + year,
+    data = ef_data, pass = pass, id = sampleID
+  )
 ```
 ```{r echo = FALSE}
 m1
@@ -71,7 +78,7 @@ m1_gam <- as.gam(m1)
 Predict _P_ from the model to the full dataset. Note, if all the data is multi-pass then can just use fitted values. However, if you want P for both single and multi-pass data then predict to the new dataframe
 
 ```{r}
-ef_data $ prob <- predict.gam(m1_gam, newdata=ef_data, type = "response")
+ef_data$prob <- predict.gam(m1_gam, newdata=ef_data, type = "response")
 ```
 
 
@@ -111,13 +118,13 @@ densdata <- unique(select(ef_data, -count, -prob, -pass, -pass12))
 Join data and cumulative counts by sampleID
 
 ```{r results = 'hide', warning = FALSE, message = FALSE}
-densdata <- left_join(densdata, counts)
+densdata <- left_join(densdata, counts, by = "sampleID")
 ```
 
 Join data and cumulative capture probability by sampleID
 
 ```{r results = 'hide', warning = FALSE, message = FALSE}
-densdata <- left_join(densdata, probs)
+densdata <- left_join(densdata, probs, by = "sampleID")
 ```
 
 # Estimate Density
@@ -158,12 +165,11 @@ Overdispersion is estimated by fitting a large model that captures most of the s
 ```{r}
 large_model <- efp(count ~ pass12 + lifestage + siteID + year,
                    data = ef_data, pass = pass, id = sampleID)
-
 ```
 
 Use the overdispersion function in the ef package and specify the data, visit ID, site ID, sample ID and the large model.
 
-```{r}
+```{r, eval = FALSE}
 od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
                               siteID = "siteID", id = "sampleID",
                               largemodel = large_model)
@@ -171,7 +177,7 @@ od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
 
 View overdispersion estimate. The 'disp' column contains the estimates of overdispersion and the 3rd row contains the between-visit estimate that is used to adjust the BIC.
 
-```{r}
+```{r, eval = FALSE}
 od_estimate
 ```
 
@@ -179,7 +185,7 @@ Compare models using the adjusted BIC function (Equation 4, [Millar _et al_., 20
 
   * Full model
 
-```{r}
+```{r, eval = FALSE}
 mfull <- efp(count ~ pass12 + lifestage + siteID + year,
              data = ef_data, pass = pass, id = sampleID)
 
@@ -188,7 +194,7 @@ BICadj(mfull, ef_data, od_estimate)
 
   * Model without lifestage
 
-```{r}
+```{r, eval = FALSE}
 mlife <- efp(count ~ pass12 + siteID + year,
              data = ef_data, pass = pass, id = sampleID)
 
