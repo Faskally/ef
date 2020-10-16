@@ -155,14 +155,6 @@ efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
 
   # extract transformed parameters
   out$p <- unlist(out$tmb_report$ps)
-  #pi <- opt$par[ grep("^pi[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
-  #piT <- opt$par[ grep("^piT[[][0-9]*[]]", names(opt$par)) ]
-
-  # convert to same order as input data
-  #ordering <- as.numeric(factor(pass)) + (as.numeric(factor(id)) - 1) * s
-  #out$p <- p[ordering]
-  #out$pi <- pi[ordering]
-  #out$piT <- data.frame(id = 1:N, piT = piT, total = y_tot)
 
   # keep data for reffiting
   out$data <- data
