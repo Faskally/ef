@@ -7,8 +7,8 @@
 efp(
   formula,
   data = NULL,
-  pass,
-  id,
+  pass = pass,
+  id = id,
   offset = NULL,
   verbose = FALSE,
   init = "0",

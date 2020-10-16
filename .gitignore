@@ -16,3 +16,7 @@ ef.Rproj
 /src/ef.o
 
 *.code-workspace
+
+debug.log
+
+src/tmp.def

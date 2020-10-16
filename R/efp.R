@@ -94,14 +94,6 @@ efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
   id <- substitute(id)
   id <- eval(id, data, environment(formula))
 
-  # for model matrices
-  if (length(unique(id)) > 1) {
-    Xs <- sparse.model.matrix(~ factor(id) - 1)
-  } else {
-    Xs <- sparse.model.matrix(~ id - 1)
-  }
-  Xp <- sparse.model.matrix(~ factor(pass) - 1)
-
   # set up offset
   if (is.null(offset)) {
     offset <- rep(0, nrow(data))
@@ -124,51 +116,15 @@ efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
     Gfit <- G
   }
 
-  # define inputs for likelihood
-  npasses <- Matrix::colSums(Xs)
-  N <- ncol(Xs)
-  K <- ncol(Gfit)
-  s <- max(npasses)
-
-  # get data in the correct order
-  mat <-
-    dplyr::left_join(
-      expand.grid(pass = 1:s, id = sort(unique(id))),
-      data.frame(
-        pass = pass, id = id,
-        y = Gsetup$y,
-        offset = offset,
-        irow = 1:length(pass)
-      ),
-      by = c("pass", "id")
-    )
-  mat[is.na(mat$y), c("y", "offset")] <- 0
-
-  # we want observations in columns, passes in rows
-  y <- matrix(mat$y, nrow = s, ncol = N)
-  y_tot <- colSums(y)
-
-  # same for offset
-  offset <- matrix(mat$offset, nrow = s, ncol = N)
-
-  # same for design matrix, but this is a bit trickier
-  A <- array(0, c(s, N, K))
-  for (i in 1:N) {
-    iid <- sort(unique(id))[i]
-    .irow <- subset(mat, id == iid)$irow
-    A[!is.na(.irow),i,] <- Gfit[.irow[!is.na(.irow)],]
-  }
+  # get data for likelihood
+  ord <- order(id, pass)
 
   efdat <-
     list(
-      N = N,
-      K = K,
-      S = s,
-      npasses = npasses,
-      y = y,
-      yT = y_tot,
-      offset = offset,
-      A = A
+      y = Gsetup$y[ord],
+      offset = offset[ord],
+      sample_id = factor(id[ord]),
+      A = Gfit[ord, , drop = FALSE]
     )
 
   if (!fit) {
@@ -178,71 +134,53 @@ efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
   obj <-
     MakeADFun(
       efdat,
-      list(alpha = rep(0, K)),
+      list(alpha = rep(0, ncol(Gfit))),
       DLL = "ef",
       # map = map,
       inner.control = list(maxit = 500, trace = TRUE)
     )
 
-  opt <-
-    nlminb(
-      obj$par,
-      obj$fn,
-      obj$gr,
-      control = list(trace = 1)
-    )
+  opt <- nlminb(obj$par, obj$fn, obj$gr, control = list(trace = 1))
 
+  # set up output object
+  out <- list()
 
   # extract transformed parameters
-  p <- opt$par[ grep("^p[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
-  pi <- opt$par[ grep("^pi[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
-  piT <- opt$par[ grep("^piT[[][0-9]*[]]", names(opt$par)) ]
+  #p <- opt$par[ grep("^p[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
+  #pi <- opt$par[ grep("^pi[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
+  #piT <- opt$par[ grep("^piT[[][0-9]*[]]", names(opt$par)) ]
 
   # convert to same order as input data
-  #Xps <- Matrix::sparse.model.matrix( ~ factor(pass):factor(id) - 1)
-  #opt $ p <- as.vector(Xps %*% p)
-  #opt $ pi <- as.vector(Xps %*% pi)
-  #opt $ piT <- data.frame(id = 1:N, piT = piT, total = y_tot)
-  ordering <- as.numeric(factor(pass)) + (as.numeric(factor(id)) - 1) * s
-  opt $ p <- p[ordering]
-  opt $ pi <- pi[ordering]
-  opt $ piT <- data.frame(id = 1:N, piT = piT, total = y_tot)
+  #ordering <- as.numeric(factor(pass)) + (as.numeric(factor(id)) - 1) * s
+  #out$p <- p[ordering]
+  #out$pi <- pi[ordering]
+  #out$piT <- data.frame(id = 1:N, piT = piT, total = y_tot)
 
   # keep data for reffiting
-  opt $ standat <- standat
+  out$data <- data
+  out$formula <- formula # for printing and summary
+  out$llik <- -1 * obj$fn()
+  out$terms <- Gsetup$terms
+  out$call <- match.call()
+  out$aic <- -2 * out$llik + 2*ncol(Gfit)
+  out$G <- G
+  out$Gfit <- Gfit
+  out$coefficients <- opt$par
+  names(out$coefficients) <- colnames(Gfit)
+  out$df.null <- nrow(G)
+  out$df.residual <- nrow(G) - ncol(Gfit)
+  out$rank <- ncol(Gfit)
+  out$fitted <- p <- transpar(out$coefficients, Gfit)
 
-  opt $ formula <- formula # for printing and summary
-  opt $ llik <- opt $ value
-  opt $ terms <- Gsetup $ terms
-  opt $ call <- match.call()
-  opt $ aic <- -2 * opt $ llik + 2 * ncol(Gfit)
-  opt $ G <- G
-  opt $ Gfit <- Gfit
-  opt $ coefficients <- opt $ par[grep("alpha", names(opt$par))]
-  names(opt $ coefficients) <- colnames(Gfit)
-  opt $ df.null <- nrow(G)
-  opt $ df.residual <- nrow(G) - ncol(Gfit)
-  opt $ rank <- ncol(Gfit)
-  opt $ fitted <- p <- transpar(opt $ coefficients, Gfit)
+  out$residuals <- rep(0, nrow(data))
+  out$null.deviance <- NA
+  out$deviance <- NA
+  out$family <- binomial()
+  out$hessian <- obj$he()
+  if (hessian) rownames(out$hessian) <- colnames(out$hessian) <- colnames(Gfit)
+  out$Vb <- if (hessian) try(solve(-1 * out$hessian)) else NULL
+  out$Gsetup <- Gsetup
 
-  opt $ residuals <- rep(0, nrow(data))
-  opt $ null.deviance <- NA
-  opt $ deviance <- NA
-  opt $ family <- binomial()
-  if (hessian) rownames(opt $ hessian) <- colnames(opt $ hessian) <- colnames(Gfit)
-  opt $ Vb <- if (hessian) try(solve(-1 * opt $ hessian)) else NULL
-  opt $ Gsetup <- Gsetup
-
-  # get a gam container
-  # g1 <- gam(G = Gsetup)
-  # g1 $ coefficients[] <- opt $ par
-  # g1 $ Vp[] <- opt $ Vb
-  # g1 $ family <- binomial()
-  # X <- predict(g1, type = "lpmatrix")
-  # g1 $ linear.predictors <-  c(X %*% g1 $ coef)
-  # g1 $ fitted.values <- c(1/(1 + exp(-g1 $ linear.predictors)))
-  # g1 $ aic <- opt $ aic
-
-  class(opt) <- c("efp", "glm", "lm")
-  opt
+  class(out) <- c("efp", "glm", "lm")
+  out
 }
