@@ -137,10 +137,15 @@ efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
       list(alpha = rep(0, ncol(Gfit))),
       DLL = "ef",
       # map = map,
-      inner.control = list(maxit = 500, trace = TRUE)
+      silent = !verbose
     )
 
-  opt <- nlminb(obj$par, obj$fn, obj$gr, control = list(trace = 1))
+  if (verbose) {
+    control = list(trace = 1)
+  } else {
+    control = list()
+  }
+  opt <- nlminb(obj$par, obj$fn, obj$gr, control = control)
 
   # set up output object
   out <- list()
