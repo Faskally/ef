@@ -68,10 +68,8 @@ m1 <-
     ##     pass = pass, id = sampleID)
     ## 
     ## Coefficients:
-    ##   (Intercept)        pass122  lifestageParr    siteIDSite2    siteIDSite3       year2012       year2013       year2014  
-    ##       0.65231       -0.23915        0.59065        0.07453       -0.02373       -0.20996        0.04698        0.35844  
-    ##      year2015  
-    ##      -0.00402  
+    ##   (Intercept)        pass122  lifestageParr    siteIDSite2    siteIDSite3       year2012       year2013       year2014       year2015  
+    ##       0.65231       -0.23915        0.59065        0.07453       -0.02373       -0.20996        0.04698        0.35844       -0.00402  
     ## 
     ## Degrees of Freedom: 90 Total (i.e. Null);  81 Residual
     ## Null Deviance:       NA 
@@ -187,6 +185,14 @@ od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
                               largemodel = large_model)
 ```
 
+    ## 3-pass model start time 2020-10-16 16:01:25
+
+    ## 3-pass model duration = 0.061s
+
+    ## Site visit model start time 2020-10-16 16:01:25
+
+    ## Site visit model duration = 0.044s
+
 View overdispersion estimate. The ‘disp’ column contains the estimates
 of overdispersion and the 3rd row contains the between-visit estimate
 that is used to adjust the BIC.
@@ -194,6 +200,11 @@ that is used to adjust the BIC.
 ``` r
 od_estimate
 ```
+
+    ##                llik nparam  deviance df      disp            p
+    ## saturated -1552.713     60        NA NA        NA           NA
+    ## sitevisit -1592.692     24  79.95787 36  2.221052 3.513952e-05
+    ## large     -1585.152      9 -15.07893 15 -1.005262 1.000000e+00
 
 Compare models using the adjusted BIC function (Equation 4, [Millar *et
 al*.,
@@ -210,6 +221,8 @@ mfull <- efp(count ~ pass12 + lifestage + siteID + year,
 BICadj(mfull, ef_data, od_estimate)
 ```
 
+    ## [1] -3129.338
+
   - Model without lifestage
 
 <!-- end list -->
@@ -220,6 +233,8 @@ mlife <- efp(count ~ pass12 + siteID + year,
 
 BICadj(mlife, ef_data, od_estimate)
 ```
+
+    ## [1] -3156.317
 
 ### how to build this file
 

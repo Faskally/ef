@@ -137,6 +137,7 @@ efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
       list(alpha = rep(0, ncol(Gfit))),
       DLL = "ef",
       # map = map,
+      hessian = hessian,
       silent = !verbose
     )
 
@@ -153,7 +154,7 @@ efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
   out$tmb_report <- obj$report()
 
   # extract transformed parameters
-  #p <- opt$par[ grep("^p[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
+  out$p <- unlist(out$tmb_report$ps)
   #pi <- opt$par[ grep("^pi[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
   #piT <- opt$par[ grep("^piT[[][0-9]*[]]", names(opt$par)) ]
 

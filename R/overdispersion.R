@@ -26,8 +26,8 @@
 #'
 #' @export
 overdispersion <- function(data, siteID, visitID, count = "count",
-  pass = "pass", lifestage = "lifestage", pass12 = "pass12", id,
-  largemodel) {
+                           pass = "pass", lifestage = "lifestage", pass12 = "pass12", id,
+                           largemodel) {
 
   # Subset the dataframe to select only the columns that will be used in the function
   varID <- c(siteID, visitID, count, pass, lifestage, pass12, id)
@@ -45,7 +45,7 @@ overdispersion <- function(data, siteID, visitID, count = "count",
   data$visitID <- as.factor(data$visitID)
 
   # return the maximum number of EF passes for each visit
-  aggregatepass <- aggregate(pass~visitID, FUN=max, data=data)
+  aggregatepass <- aggregate(pass ~ visitID, FUN = max, data = data)
 
   # rename the columns
   names(aggregatepass) <- c("visitID", "maxpass")
@@ -55,7 +55,7 @@ overdispersion <- function(data, siteID, visitID, count = "count",
 
   # join the data and the maximum number of passes together. Use
   # left_join to maintain the dataframe order
-  data <- left_join(data, aggregatepass, by="visitID")
+  data <- left_join(data, aggregatepass, by = "visitID")
 
   # split the dataframe by the maximum number of passes to get a list
   # of dataframes where the total number of passes is either 2, 3 or 4
@@ -69,19 +69,20 @@ overdispersion <- function(data, siteID, visitID, count = "count",
 
   # add warnings if the list of dataframes includes site visits with
   # less than 2 passes or more than 4 passes
-  if (min(as.numeric(names(x))) < 2 | (max(as.numeric(names(x))) > 4))
-      stop('pass number not between 2 and 4')
+  if (min(as.numeric(names(x))) < 2 | (max(as.numeric(names(x))) > 4)) {
+    stop("pass number not between 2 and 4")
+  }
 
 
-    ################
-    #
-    # SATURATED MODEL
-    #
-    ################
+  ################
+  #
+  # SATURATED MODEL
+  #
+  ################
 
   # create an empty dataframe to store the log likelihood and number
   # of parameters for each model
-  Saturated <- data.frame(llik=as.numeric(),params=as.numeric())
+  Saturated <- data.frame(llik = as.numeric(), params = as.numeric())
 
   # Produce a saturated model for 2, 3, and 4-pass data if present. '-1' prevents
   # the model estimate of intercept, and avoids problems if the intercept for the
@@ -93,7 +94,7 @@ overdispersion <- function(data, siteID, visitID, count = "count",
   # NOTE: This next step repeats for 2, 3 and 4-pass data
 
   # go to list of dataframes and check to see if 4 pass data recorded as "4" in list
-  if(max(as.numeric(names(x))) == 4){
+  if (max(as.numeric(names(x))) == 4) {
 
     # Create a categorical variable for pass123 which
     # treats passes 1 and 2 separately from 3 and 4
@@ -103,11 +104,10 @@ overdispersion <- function(data, siteID, visitID, count = "count",
     })
 
     # Record and print the system time
-    t1=Sys.time()
-    cat(paste("4-pass model start time",t1), "\n")
-    cat("Modelling 4-pass data...", "\n")
+    t1 <- Sys.time()
+    message("4-pass model start time ", t1)
 
-     # create a dataframe from the 4-pass data
+    # create a dataframe from the 4-pass data
     d <- x[["4"]]
 
     # drop levels to remove unused factor levels
@@ -156,15 +156,13 @@ overdispersion <- function(data, siteID, visitID, count = "count",
 
     # store and print the time that it took for the model to run
     t2 <- Sys.time()
-    message("4-pass model end time", t2)
     etime <- t2 - t1
-    message("4-pass model duration =", etime)
+    message("4-pass model duration =", round(etime, 3), "s")
   }
 
-  if (3 %in% (as.numeric(names(x)))){
+  if (3 %in% (as.numeric(names(x)))) {
     t1 <- Sys.time()
-    message("3-pass model start time")
-    message("Modelling 3-pass data...")
+    message("3-pass model start time ", t1)
 
     d <- x[["3"]]
     d <- droplevels(d)
@@ -173,8 +171,8 @@ overdispersion <- function(data, siteID, visitID, count = "count",
         d[c("pass", "id", "count", "maxpass", "pass12", "lifestage")],
         d$visitID
       )
-    out <- data.frame(llik = as.numeric(), params = as.numeric())
-    for(i in 1:length(v)){
+    out <- data.frame(llik = numeric(0), params = integer(0))
+    for (i in 1:length(v)) {
       m <- efp(count ~ -1 + lifestage:pass12,
         pass = pass, id = id,
         data = v[[i]], hessian = FALSE, verbose = FALSE
@@ -191,19 +189,17 @@ overdispersion <- function(data, siteID, visitID, count = "count",
       data.frame(
         llik = sum(out$llik),
         nparam = sum(out$params)
-     )
+      )
 
     Saturated <- rbind(Saturated, sat3pass)
     t2 <- Sys.time()
-    cat("3-pass model end time", t2)
     etime <- t2 - t1
-    message("3-pass model duration =", etime)
+    message("3-pass model duration = ", round(etime, 3), "s")
   }
 
-  if(min(as.numeric(names(x))) == 2){
+  if (min(as.numeric(names(x))) == 2) {
     t1 <- Sys.time()
-    message("2-pass model start time",t1)
-    message("Modelling 2-pass data...")
+    message("2-pass model start time ", t1)
 
     d <- x[["2"]]
     d <- droplevels(d)
@@ -212,7 +208,7 @@ overdispersion <- function(data, siteID, visitID, count = "count",
         d[c("pass", "id", "count", "maxpass", "lifestage")],
         d$visitID
       )
-    out <- data.frame(llik = as.numeric(), params = as.numeric())
+    out <- data.frame(llik = numeric(0), params = integer(0))
     for (i in 1:length(v)) {
       m <- efp(count ~ -1 + lifestage,
         pass = pass, id = id,
@@ -222,7 +218,7 @@ overdispersion <- function(data, siteID, visitID, count = "count",
       mod <-
         data.frame(
           llik = as.numeric(m$llik),
-          params = as.numeric(length(m$coefficients))
+          params = length(m$coefficients)
         )
       out <- rbind(out, mod)
     }
@@ -236,11 +232,9 @@ overdispersion <- function(data, siteID, visitID, count = "count",
     Saturated <- rbind(Saturated, sat2pass)
 
     t2 <- Sys.time()
-    message("2-pass model end time", t2)
-    etime <- t2-t1
+    etime <- t2 - t1
     message("2-pass model duration =", etime)
   }
-
 
   # Create dataframe with the sum of the logliks and nparams from the 2, 3 and
   # 4 pass data if you have it
@@ -270,8 +264,7 @@ overdispersion <- function(data, siteID, visitID, count = "count",
 
   # Record and print system time
   t1 <- Sys.time()
-  message("Site visit model start time", t1)
-  message("Running Site Visit model...")
+  message("Site visit model start time ", t1)
 
   # subset the dataframe to select only the required fields
   df <- subset(data, select = c("count", "pass", "id", "visitID"))
@@ -287,7 +280,7 @@ overdispersion <- function(data, siteID, visitID, count = "count",
   svis <- data.frame(llik = as.numeric(), params = as.numeric())
 
   # loop over the list of dataframes and estimate an intercept for each site visit
-  for(i in 1:length(v)) {
+  for (i in 1:length(v)) {
     m <-
       efp(
         count ~ 1,
@@ -306,9 +299,8 @@ overdispersion <- function(data, siteID, visitID, count = "count",
 
   # store and print the system time and calculate the running time for the site-visit model
   t2 <- Sys.time()
-  message("Site visit model end time", t2)
   etime <- t2 - t1
-  message("Site visit model duration =", etime)
+  message("Site visit model duration = ", round(etime, 3), "s")
 
   # sum the log likelihoods and number of parameters from the models
   sitevisit <-
@@ -334,7 +326,7 @@ overdispersion <- function(data, siteID, visitID, count = "count",
   # bind together the log-likelihoods and number of parameters from each
   # of the three modelling processes
   wk.anova <- rbind(saturated, sitevisit, largeout)
-  row.names(wk.anova) = c("saturated", "sitevisit", "large")
+  row.names(wk.anova) <- c("saturated", "sitevisit", "large")
 
   # calculate the difference in the deviance and degrees of freedom between successive
   # model outputs and estimate the within visit (saturated to site-visit model) and between

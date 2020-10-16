@@ -171,7 +171,7 @@ large_model <- efp(count ~ pass12 + lifestage + siteID + year,
 
 Use the overdispersion function in the ef package and specify the data, visit ID, site ID, sample ID and the large model.
 
-```{r, eval = FALSE}
+```{r}
 od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
                               siteID = "siteID", id = "sampleID",
                               largemodel = large_model)
@@ -179,7 +179,7 @@ od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
 
 View overdispersion estimate. The 'disp' column contains the estimates of overdispersion and the 3rd row contains the between-visit estimate that is used to adjust the BIC.
 
-```{r, eval = FALSE}
+```{r}
 od_estimate
 ```
 
@@ -187,7 +187,7 @@ Compare models using the adjusted BIC function (Equation 4, [Millar _et al_., 20
 
   * Full model
 
-```{r, eval = FALSE}
+```{r}
 mfull <- efp(count ~ pass12 + lifestage + siteID + year,
              data = ef_data, pass = pass, id = sampleID)
 
@@ -196,7 +196,7 @@ BICadj(mfull, ef_data, od_estimate)
 
   * Model without lifestage
 
-```{r, eval = FALSE}
+```{r}
 mlife <- efp(count ~ pass12 + siteID + year,
              data = ef_data, pass = pass, id = sampleID)
 
