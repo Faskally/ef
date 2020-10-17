@@ -13,6 +13,7 @@
 #' @param init should initialisatiom be random?
 #' @param hessian if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb
 #' @param fit if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned
+#' @param sample_re should sample random effects be included
 #' @return glm type object
 #' @examples
 #' \dontrun{
@@ -81,8 +82,9 @@
 #' @importFrom mgcv gam
 #'
 #' @export
-efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
-                verbose = FALSE, init = "0", hessian = TRUE, fit = TRUE) {
+efp <- function(formula, data = NULL, pass = pass, id = id,
+  offset = NULL, verbose = FALSE, init = "0", hessian = TRUE,
+  fit = TRUE, sample_re = FALSE) {
 
   # some checks
   if (is.null(data)) stop("must supply data")
@@ -119,24 +121,51 @@ efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
   # get data for likelihood
   ord <- order(id, pass)
 
+  X <- Gfit[ord, , drop = FALSE]
+  X <- as(X, "dgTMatrix")
+  if (sample_re) {
+    Z <- sparse.model.matrix(~ factor(id[ord]) - 1)
+  } else {
+    Z <- matrix(1, nrow(X), 1)
+  }
+  Z <- as(Z, "dgTMatrix")
+
   efdat <-
     list(
       y = Gsetup$y[ord],
       offset = offset[ord],
       sample_id = factor(id[ord]),
-      A = Gfit[ord, , drop = FALSE]
+      X = X,
+      Z = Z,
+      sample_re = as.integer(sample_re)
     )
 
   if (!fit) {
     return(efdat)
   }
 
+  params <-
+    list(
+      alpha = rep(0, ncol(efdat$Z)),
+      beta = rep(0, ncol(efdat$X)),
+      log_sigma = 0
+    )
+
+  if (sample_re == 0L) {
+    rand <- NULL
+    map <- list(alpha = factor(NA), log_sigma = factor(NA))
+  } else {
+    rand <- "alpha"
+    map <- list()
+  }
+
   obj <-
     MakeADFun(
       efdat,
-      list(alpha = rep(0, ncol(Gfit))),
+      params,
+      random = rand,
       DLL = "ef",
-      # map = map,
+      map = map,
       hessian = hessian,
       silent = !verbose
     )
@@ -146,39 +175,47 @@ efp <- function(formula, data = NULL, pass = pass, id = id, offset = NULL,
   } else {
     control = list()
   }
+
   opt <- nlminb(obj$par, obj$fn, obj$gr, control = control)
 
   # set up output object
   out <- list()
 
-  out$tmb_report <- obj$report()
-
   # extract transformed parameters
-  out$p <- unlist(out$tmb_report$ps)
+  out$p <- unlist(obj$report()$ps)
 
+  fx_pars <- grep("beta", names(opt$par))
+  out$sdrep <- sdreport(obj)
+  out$rep <- obj$report()
   # keep data for reffiting
   out$data <- data
   out$formula <- formula # for printing and summary
-  out$llik <- -1 * obj$fn()
+  out$llik <- -1 * obj$fn(opt$par)
   out$terms <- Gsetup$terms
   out$call <- match.call()
   out$aic <- -2 * out$llik + 2*ncol(Gfit)
   out$G <- G
   out$Gfit <- Gfit
-  out$coefficients <- opt$par
+  out$coefficients <- opt$par[fx_pars]
   names(out$coefficients) <- colnames(Gfit)
   out$df.null <- nrow(G)
   out$df.residual <- nrow(G) - ncol(Gfit)
   out$rank <- ncol(Gfit)
-  out$fitted <- p <- transpar(out$coefficients, Gfit)
+  out$fitted <- out$p
 
   out$residuals <- rep(0, nrow(data))
   out$null.deviance <- NA
   out$deviance <- NA
   out$family <- binomial()
-  out$hessian <- obj$he()
-  if (hessian) rownames(out$hessian) <- colnames(out$hessian) <- colnames(Gfit)
-  out$Vb <- if (hessian) try(solve(-1 * out$hessian)) else NULL
+  if (sample_re | !hessian) {
+    out$hessian <- NULL
+    out$Vb <- NULL
+  } else {
+    out$hessian <- obj$he(opt$par)[fx_pars, fx_pars, drop = FALSE]
+    rownames(out$hessian) <- colnames(out$hessian) <- colnames(Gfit)
+    out$Vb <- try(solve(out$hessian))
+  }
+
   out$Gsetup <- Gsetup
 
   class(out) <- c("efp", "glm", "lm")

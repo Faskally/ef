@@ -1,9 +1,9 @@
 library(testthat)
 
 nloglik <- function(efdat, b) {
-  p <- 1 / (1 + exp(-efdat$A %*% b - efdat$offset))
+  p <- 1 / (1 + exp(-efdat$X %*% b - efdat$offset))
 
-  dat <- data.frame(y = efdat$y, p)
+  dat <- data.frame(y = efdat$y, p[,1])
   ll <-
     by(dat, efdat$sample_id, function(x) {
       pi <- x$p * c(1, cumprod(1 - x$p)[-nrow(x)])
@@ -31,19 +31,25 @@ test_that("single sample, 3 pass, constant p", {
       fit = FALSE
     )
 
+  params <-
+    list(
+      alpha = rep(0, ncol(efdat$Z)),
+      beta = rep(0, ncol(efdat$X)),
+      log_sigma = 0
+    )
+
   obj <-
     MakeADFun(
       efdat,
-      list(alpha = rep(0, ncol(efdat$A))),
+      params,
       DLL = "ef",
       # map = map,
       inner.control = list(maxit = 500, trace = TRUE)
     )
 
-  b <- 0
-  tmb_nll <- obj$fn(b)
-  r_nll <- nloglik(efdat, b)
-  expect_equal(obj$fn(b), nloglik(efdat, b))
+  tmb_nll <- obj$fn(obj$par)
+  r_nll <- nloglik(efdat, obj$par["beta"])
+  expect_equal(tmb_nll, r_nll)
 })
 
 

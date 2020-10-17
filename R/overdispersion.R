@@ -270,7 +270,7 @@ overdispersion <- function(data, siteID, visitID, count = "count",
   df <- subset(data, select = c("count", "pass", "id", "visitID"))
 
   # create a column which has the transformed p values from the large model
-  df$p <- qlogis(largemodel$p)
+  df$p <- qlogis(fitted(largemodel))
 
   # split into a list of dataframes, one for each unique site visit
   v <- split(df, df$visitID)

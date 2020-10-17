@@ -13,7 +13,8 @@ efp(
   verbose = FALSE,
   init = "0",
   hessian = TRUE,
-  fit = TRUE
+  fit = TRUE,
+  sample_re = FALSE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ efp(
 \item{hessian}{if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb}
 
 \item{fit}{if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned}
+
+\item{sample_re}{should sample random effects be included}
 }
 \value{
 glm type object
