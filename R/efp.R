@@ -13,6 +13,7 @@
 #' @param init should initialisatiom be random?
 #' @param hessian if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb
 #' @param fit if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned
+#' @param sample_re should sample random effects be included
 #' @return glm type object
 #' @examples
 #' \dontrun{
@@ -71,29 +72,28 @@
 #' m2$piT
 #'
 #' msim2 <- simulate(m2, nsim = 1)
-#' library(rstan)
-#' plot(msim2, pars = "p")
 #' }
+#'
+#' @importFrom TMB MakeADFun sdreport
+#' @importFrom stats nlminb
+#' @importFrom Matrix sparse.model.matrix
+#' @importFrom mgcv gam
+#' @importFrom methods as
+#'
 #' @export
-efp <- function(formula, data = NULL, pass, id, offset = NULL,
-                verbose = FALSE, init = "0", hessian = TRUE, fit = TRUE) {
+efp <- function(formula, data = NULL, pass = pass, id = id,
+  offset = NULL, verbose = FALSE, init = "0", hessian = TRUE,
+  fit = TRUE, sample_re = FALSE) {
 
   # some checks
   if (is.null(data)) stop("must supply data")
 
   # get pass information
-  if (missing(pass)) stop("must supply pass number")
   pass <- substitute(pass)
   pass <- eval(pass, data, environment(formula))
-  if (missing(id)) stop("must supply sample id")
+  # get id
   id <- substitute(id)
   id <- eval(id, data, environment(formula))
-  # a check of somekind? there should only be 1 pass of each pass number per sample!
-  # if (length(unique(pass)) != 3 || !all(sort(unique(pass)) == 1:3)) stop("There should only be 3 passes and they should be numbered 1 to 3")
-  # sort data by sample id then pass?
-  # the within sample structure is then,
-  Xs <- Matrix::sparse.model.matrix(~ factor(id)  - 1)
-  Xp <- Matrix::sparse.model.matrix(~ factor(pass)  - 1)
 
   # set up offset
   if (is.null(offset)) {
@@ -102,8 +102,8 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
 
   # set up model
   Gsetup <- gam(formula, data = data, fit = FALSE, drop.unused.levels = FALSE)
-  G <- Gsetup $ X
-  colnames(G) <- Gsetup $ term.names
+  G <- Gsetup$X
+  colnames(G) <- Gsetup$term.names
   if (nrow(G) != nrow(data)) stop("I think there are NAs in your data, please check and remove them before rerunning.")
 
   # remove redundant / collinear parameters
@@ -117,104 +117,106 @@ efp <- function(formula, data = NULL, pass, id, offset = NULL,
     Gfit <- G
   }
 
-  # define inputs for likelihood
-  npasses <- Matrix::colSums(Xs)
-  N <- ncol(Xs)
-  K <- ncol(Gfit)
-  s <- max(npasses)
+  # get data for likelihood
+  ord <- order(id, pass)
 
-  # get data in the correct order
-  mat <- data.frame(pass = pass, id = id, y = Gsetup$y, offset = offset, irow = 1:length(pass))
-  mat2 <- expand.grid(pass = 1:s, id = sort(unique(id)))
-  mat2 <- dplyr::left_join(mat2, mat, by = c("pass", "id"))
-  mat2[is.na(mat2$y), c("y", "offset")] <- 0
-
-  # we want observations in columns, passes in rows
-  y <- matrix(mat2$y, nrow = s, ncol = N)
-  y_tot <- colSums(y)
-
-  # same for offset
-  offset <- matrix(mat2$offset, nrow = s, ncol = N)
-
-  # same for design matrix, but this is a bit trickier
-  A <- array(0, c(s, N, K))
-  for (i in 1:N) {
-    iid <- sort(unique(id))[i]
-    .irow <- subset(mat2, id == iid)$irow
-    A[!is.na(.irow),i,] <- Gfit[.irow[!is.na(.irow)],]
-  }
-
-  standat <-
-    list(N = N,
-         K = K,
-         s = s,
-         npasses = npasses,
-         y = y,
-         yT = y_tot,
-         offset = offset,
-         A = A)
-
-  if (!fit) return(standat)
-
-  if (!verbose) {
-    tmp <-
-      capture.output(
-        opt <- rstan::optimizing(.stanmodels$ ef, data = standat, algorith = "BFGS", hessian = hessian, verbose = verbose, init = init)
-      )
+  X <- Gfit[ord, , drop = FALSE]
+  X <- as(X, "dgTMatrix")
+  if (sample_re) {
+    Z <- sparse.model.matrix(~ factor(id[ord]) - 1)
   } else {
-    opt <- rstan::optimizing(.estanmodelsfEnv$ ef, data = standat, algorith = "BFGS", hessian = hessian, verbose = verbose, init = init)
+    Z <- matrix(1, nrow(X), 1)
   }
+  Z <- as(Z, "dgTMatrix")
+
+  efdat <-
+    list(
+      y = Gsetup$y[ord],
+      offset = offset[ord],
+      sample_id = factor(id[ord]),
+      X = X,
+      Z = Z,
+      sample_re = as.integer(sample_re)
+    )
+
+  if (!fit) {
+    return(efdat)
+  }
+
+  params <-
+    list(
+      alpha = rep(0, ncol(efdat$Z)),
+      beta = rep(0, ncol(efdat$X)),
+      log_sigma = 0
+    )
+
+  if (sample_re == 0L) {
+    rand <- NULL
+    map <- list(alpha = factor(NA), log_sigma = factor(NA))
+  } else {
+    rand <- "alpha"
+    map <- list()
+  }
+
+  obj <-
+    MakeADFun(
+      efdat,
+      params,
+      random = rand,
+      DLL = "ef",
+      map = map,
+      hessian = hessian,
+      silent = !verbose
+    )
+
+  if (verbose) {
+    control = list(trace = 1)
+  } else {
+    control = list()
+  }
+
+  opt <- nlminb(obj$par, obj$fn, obj$gr, control = control)
+
+  # set up output object
+  out <- list()
 
   # extract transformed parameters
-  p <- opt$par[ grep("^p[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
-  pi <- opt$par[ grep("^pi[[][0-9]*[,][0-9]*[]]", names(opt$par)) ]
-  piT <- opt$par[ grep("^piT[[][0-9]*[]]", names(opt$par)) ]
+  out$p <- unlist(obj$report()$ps)
 
-  # convert to same order as input data
-  #Xps <- Matrix::sparse.model.matrix( ~ factor(pass):factor(id) - 1)
-  #opt $ p <- as.vector(Xps %*% p)
-  #opt $ pi <- as.vector(Xps %*% pi)
-  #opt $ piT <- data.frame(id = 1:N, piT = piT, total = y_tot)
-  ordering <- as.numeric(factor(pass)) + (as.numeric(factor(id)) - 1) * s
-  opt $ p <- p[ordering]
-  opt $ pi <- pi[ordering]
-  opt $ piT <- data.frame(id = 1:N, piT = piT, total = y_tot)
-
+  fx_pars <- grep("beta", names(opt$par))
+  out$sdrep <- sdreport(obj)
+  out$rep <- obj$report()
   # keep data for reffiting
-  opt $ standat <- standat
+  out$data <- data
+  out$formula <- formula # for printing and summary
+  out$llik <- -1 * obj$fn(opt$par)
+  out$terms <- Gsetup$terms
+  out$call <- match.call()
+  out$aic <- -2 * out$llik + 2*ncol(Gfit)
+  out$G <- G
+  out$Gfit <- Gfit
+  out$coefficients <- opt$par[fx_pars]
+  names(out$coefficients) <- colnames(Gfit)
+  out$df.null <- nrow(G)
+  out$df.residual <- nrow(G) - ncol(Gfit)
+  out$rank <- ncol(Gfit)
+  out$fitted <- out$p
 
-  opt $ formula <- formula # for printing and summary
-  opt $ llik <- opt $ value
-  opt $ terms <- Gsetup $ terms
-  opt $ call <- match.call()
-  opt $ aic <- -2 * opt $ llik + 2 * ncol(Gfit)
-  opt $ G <- G
-  opt $ Gfit <- Gfit
-  opt $ coefficients <- opt $ par[grep("alpha", names(opt$par))]
-  names(opt $ coefficients) <- colnames(Gfit)
-  opt $ df.null <- nrow(G)
-  opt $ df.residual <- nrow(G) - ncol(Gfit)
-  opt $ rank <- ncol(Gfit)
-  opt $ fitted <- p <- transpar(opt $ coefficients, Gfit)
+  out$residuals <- rep(0, nrow(data))
+  out$null.deviance <- NA
+  out$deviance <- NA
+  out$family <- binomial()
+  if (sample_re | !hessian) {
+    out$hessian <- NULL
+    out$Vb <- NULL
+  } else {
+    out$hessian <- obj$he(opt$par)[fx_pars, fx_pars, drop = FALSE]
+    rownames(out$hessian) <- colnames(out$hessian) <- colnames(Gfit)
+    out$Vb <- try(solve(out$hessian))
+  }
 
-  opt $ residuals <- rep(0, nrow(data))
-  opt $ null.deviance <- NA
-  opt $ deviance <- NA
-  opt $ family <- binomial()
-  if (hessian) rownames(opt $ hessian) <- colnames(opt $ hessian) <- colnames(Gfit)
-  opt $ Vb <- if (hessian) try(solve(-1 * opt $ hessian)) else NULL
-  opt $ Gsetup <- Gsetup
+  out$Gsetup <- Gsetup
 
-  # get a gam container
-  # g1 <- gam(G = Gsetup)
-  # g1 $ coefficients[] <- opt $ par
-  # g1 $ Vp[] <- opt $ Vb
-  # g1 $ family <- binomial()
-  # X <- predict(g1, type = "lpmatrix")
-  # g1 $ linear.predictors <-  c(X %*% g1 $ coef)
-  # g1 $ fitted.values <- c(1/(1 + exp(-g1 $ linear.predictors)))
-  # g1 $ aic <- opt $ aic
-
-  class(opt) <- c("efp", "glm", "lm")
-  opt
+  class(out) <- c("efp", "glm", "lm")
+  out
 }

@@ -2,3 +2,10 @@
 ^.travis.yml$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^README.md$
+^README.Rmd$
+^.travis.yml$
+^worksheet.R$
+^debug.log$
+^ef.code-workspace$
+^README_files$

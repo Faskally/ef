@@ -12,5 +12,11 @@ inst/doc
 ef.Rproj
 
 # folders to ignore
-/dev/
-/src/
+/src/ef.dll
+/src/ef.o
+
+*.code-workspace
+
+debug.log
+
+src/tmp.def
