@@ -1,3 +1,4 @@
+#' @importFrom stats formula
 #' @export
 print.efp <- function(x, digits = max(3L, getOption("digits") - 3L),  ...) {
 
@@ -19,7 +20,7 @@ print.efp <- function(x, digits = max(3L, getOption("digits") - 3L),  ...) {
     cat("No random effects\n\n")
   }
 
-  if (length(coef(x))) {
+  if (!is.null(x$sdrep$par.fixed)) {
     cat("Coefficients:\n")
     fx <- summary(x$sdrep, "fixed", p.value = TRUE)
     fx <- fx[!grepl("log_", rownames(fx)), ,drop = FALSE]
@@ -34,10 +35,6 @@ print.efp <- function(x, digits = max(3L, getOption("digits") - 3L),  ...) {
     "\nDegrees of Freedom:", x$df.null, "Total (i.e. Null); ",
     x$df.residual, "Residual\n"
   )
-
-  if (nzchar(mess <- naprint(x$na.action))) {
-    cat("  (", mess, ")\n", sep = "")
-  }
 
   cat("AIC:", format(signif(x$aic, digits)))
 

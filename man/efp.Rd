@@ -102,8 +102,6 @@ out
 m2$piT
 
 msim2 <- simulate(m2, nsim = 1)
-library(rstan)
-plot(msim2, pars = "p")
 }
 
 }

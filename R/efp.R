@@ -72,14 +72,13 @@
 #' m2$piT
 #'
 #' msim2 <- simulate(m2, nsim = 1)
-#' library(rstan)
-#' plot(msim2, pars = "p")
 #' }
 #'
 #' @importFrom TMB MakeADFun sdreport
 #' @importFrom stats nlminb
 #' @importFrom Matrix sparse.model.matrix
 #' @importFrom mgcv gam
+#' @importFrom methods as
 #'
 #' @export
 efp <- function(formula, data = NULL, pass = pass, id = id,
