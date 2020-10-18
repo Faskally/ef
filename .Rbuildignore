@@ -9,3 +9,5 @@
 ^debug.log$
 ^ef.code-workspace$
 ^README_files$
+^CRAN-RELEASE$
+^cran-comments\.md$
