@@ -1,7 +1,7 @@
 Package: ef
 Title: Modelling Framework for the Estimation of Salmonid Abundance in
   Scottish Rivers
-Version: 1.0.3
+Version: 1.2.0
 Date: 2020-10-18
 Authors@R:
   c(

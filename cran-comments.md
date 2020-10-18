@@ -12,4 +12,11 @@
     sub-directories of 1Mb or more:
       libs  19.4Mb
 
-* This is a new release.
+* checking CRAN incoming feasibility ... NOTE
+Maintainer: 'Colin Millar <colin.millar@ices.dk>'
+
+New submission
+
+Possibly mis-spelled words in DESCRIPTION:
+  Salmonid (2:50)
+  multipass (14:18)
