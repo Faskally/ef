@@ -15,5 +15,6 @@
 #'   \item{count}{description ...}
 #'   \item{area}{description ...}
 #' }
+#'
 #' @source \url{https://www2.gov.scot/Topics/marine/Salmon-Trout-Coarse/Freshwater/Monitoring/temperature}
 "ef_data"
