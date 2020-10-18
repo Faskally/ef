@@ -20,3 +20,9 @@ New submission
 Possibly mis-spelled words in DESCRIPTION:
   Salmonid (2:50)
   multipass (14:18)
+
+
+## comments
+
+Salmonid and multipass are commonly used in the electrifishing
+literature.
