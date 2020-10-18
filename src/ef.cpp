@@ -1,3 +1,4 @@
+#define TMB_LIB_INIT R_init_ef
 #include <TMB.hpp>
 
 // log likelihood of a single multipass electrofishing sample

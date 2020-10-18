@@ -15,5 +15,6 @@
 #'   \item{count}{the number of fish caught per pass for each site visit and species, etc.}
 #'   \item{area}{the area of river fished}
 #' }
+#'
 #' @source \url{https://www2.gov.scot/Topics/marine/Salmon-Trout-Coarse/Freshwater/Monitoring/temperature}
 "ef_data"
