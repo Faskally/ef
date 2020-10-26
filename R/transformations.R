@@ -28,8 +28,8 @@ logit <- function(p) {
 
 #' Utility function to convert parameters to probabilities
 #'
-#' The matrix G shoudl be of dimension n x p,
-#' and the parameter vector should be lenght p
+#' The matrix G should be of dimension n x p,
+#' and the parameter vector should be length p
 #'
 #' @param par fitted model parameters
 #' @param G The design matrix for a model

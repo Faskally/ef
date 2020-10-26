@@ -15,6 +15,6 @@ transpar(par, G)
 a data frame
 }
 \description{
-The matrix G shoudl be of dimension n x p,
-and the parameter vector should be lenght p
+The matrix G should be of dimension n x p,
+and the parameter vector should be length p
 }

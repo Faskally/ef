@@ -1,6 +1,5 @@
 Package: ef
-Title: Modelling Framework for the Estimation of Salmonid Abundance in
-  Scottish Rivers
+Title: Modelling Framework for the Estimation of Salmonid Abundance
 Version: 1.2.0
 Date: 2020-10-18
 Authors@R:
@@ -9,7 +8,8 @@ Authors@R:
                     email = "colin.millar@ices.dk"),
     person("Rob", "Fryer", role = "aut"),
     person("Iain", "Malcolm", role = "aut"),
-    person("Ross", "Glover", role = "aut"))
+    person("Ross", "Glover", role = "aut"),
+    person("Marine Scotland Science", role = "cph"))
 Description: A set of functions to estimate capture probabilities and
   densities from multipass pass removal data.
 Depends: R (>= 3.0), TMB

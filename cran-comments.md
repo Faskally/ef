@@ -24,5 +24,9 @@ Possibly mis-spelled words in DESCRIPTION:
 
 ## comments
 
-Salmonid and multipass are commonly used in the electrifishing
-literature.
+* Marine Scotland Science has been added to the author list in
+the DESCRIPTION file as the copywrote holder
+
+* The TItle of the package has been reduced in size
+
+* all examples are run now
