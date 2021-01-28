@@ -14,7 +14,8 @@ efp(
   init = "0",
   hessian = TRUE,
   fit = TRUE,
-  sample_re = FALSE
+  sample_re = FALSE,
+  control = list()
 )
 }
 \arguments{

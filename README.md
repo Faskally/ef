@@ -64,16 +64,29 @@ m1 <-
 ```
 
     ## 
-    ## Call:  efp(formula = count ~ pass12 + lifestage + siteID + year, data = ef_data, 
+    ## Call:
+    ## efp(formula = count ~ pass12 + lifestage + siteID + year, data = ef_data, 
     ##     pass = pass, id = sampleID)
     ## 
+    ## Formula:
+    ## count ~ pass12 + lifestage + siteID + year
+    ## 
+    ## No random effects
+    ## 
     ## Coefficients:
-    ##   (Intercept)        pass122  lifestageParr    siteIDSite2    siteIDSite3       year2012       year2013       year2014       year2015  
-    ##       0.65231       -0.23915        0.59065        0.07453       -0.02373       -0.20996        0.04698        0.35844       -0.00402  
+    ##                Estimate Std. Error  z value Pr(>|z^2|)
+    ## (Intercept)    0.652301     0.1723  3.78656  1.527e-04
+    ## pass122       -0.239160     0.1311 -1.82436  6.810e-02
+    ## lifestageParr  0.590641     0.1210  4.88208  1.050e-06
+    ## siteIDSite2    0.074540     0.1354  0.55059  5.819e-01
+    ## siteIDSite3   -0.023719     0.1473 -0.16098  8.721e-01
+    ## year2012      -0.209949     0.1736 -1.20936  2.265e-01
+    ## year2013       0.046976     0.1855  0.25317  8.001e-01
+    ## year2014       0.358431     0.1834  1.95389  5.071e-02
+    ## year2015      -0.004013     0.2114 -0.01899  9.849e-01
     ## 
     ## Degrees of Freedom: 90 Total (i.e. Null);  81 Residual
-    ## Null Deviance:       NA 
-    ## Residual Deviance: NA    AIC: 3188
+    ## AIC: 3188
 
 # Get Predicted Values for *P*
 
@@ -185,13 +198,13 @@ od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
                               largemodel = large_model)
 ```
 
-    ## 3-pass model start time 2020-10-16 16:01:25
+    ## 3-pass model start time 2021-01-28 15:50:20
 
-    ## 3-pass model duration = 0.061s
+    ## 3-pass model duration = 0.293s
 
-    ## Site visit model start time 2020-10-16 16:01:25
+    ## Site visit model start time 2021-01-28 15:50:20
 
-    ## Site visit model duration = 0.044s
+    ## Site visit model duration = 0.125s
 
 View overdispersion estimate. The ‘disp’ column contains the estimates
 of overdispersion and the 3rd row contains the between-visit estimate
@@ -202,8 +215,8 @@ od_estimate
 ```
 
     ##                llik nparam  deviance df      disp            p
-    ## saturated -1552.713     60        NA NA        NA           NA
-    ## sitevisit -1592.692     24  79.95787 36  2.221052 3.513952e-05
+    ## saturated -1552.715     60        NA NA        NA           NA
+    ## sitevisit -1592.692     24  79.95387 36  2.220941 3.518106e-05
     ## large     -1585.152      9 -15.07893 15 -1.005262 1.000000e+00
 
 Compare models using the adjusted BIC function (Equation 4, [Millar *et
@@ -236,10 +249,28 @@ BICadj(mlife, ef_data, od_estimate)
 
     ## [1] -3156.317
 
-### how to build this file
+## contributing
 
-this file was created using
+After making changes to the code, run:
+
+``` r
+devtools::document()
+```
+
+to update help files and the NAMESPACE
+
+then
+
+``` r
+devtools::check()
+```
+
+to check for errors, and fix warnings and notes
+
+Finally, the readme can be rebuilt using
 
 ``` r
 rmarkdown::render("README.Rmd")
 ```
+
+then changes can be commited and pushed.
