@@ -76,7 +76,7 @@
 #' @export
 efp <- function(formula, data = NULL, pass = pass, id = id,
   offset = NULL, verbose = FALSE, init = "0", hessian = TRUE,
-  fit = TRUE, sample_re = FALSE) {
+  fit = TRUE, sample_re = FALSE, control = list()) {
 
   # some checks
   if (is.null(data)) stop("must supply data")
@@ -168,8 +168,16 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
     control = list()
   }
 
-  opt <- nlminb(obj$par, obj$fn, obj$gr, control = control)
-
+  #opt <- nlminb(obj$par, obj$fn, obj$gr, control = control)
+  
+  opt <- optim(obj$par, obj$fn, obj$gr, method = "BFGS", control = control)
+  
+  # check convergence
+  
+  if (opt$convergence != 0) {
+    warning("model has not converged: optim convergence code = ", opt$convergence)
+  }
+  
   # set up output object
   out <- list()
 
@@ -209,6 +217,7 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   }
 
   out$Gsetup <- Gsetup
+  out$convergence <- opt$convergence
 
   class(out) <- c("efp", "glm", "lm")
   out
