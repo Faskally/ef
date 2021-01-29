@@ -29,7 +29,7 @@ efp(
 
 \item{offset}{an possible offset for the linear predictor of capture probability}
 
-\item{verbose}{if TRUE stan optimiser messages are printed to the screen}
+\item{verbose}{if TRUE optimiser messages are printed to the screen}
 
 \item{init}{should initialisatiom be random?}
 
@@ -38,6 +38,8 @@ efp(
 \item{fit}{if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned}
 
 \item{sample_re}{should sample random effects be included}
+
+\item{control}{a list of control commands to be passed to optim}
 }
 \value{
 glm type object

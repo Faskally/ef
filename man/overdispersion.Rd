@@ -6,13 +6,13 @@
 \usage{
 overdispersion(
   data,
-  siteID,
-  visitID,
+  siteID = "siteID",
+  visitID = "visitID",
   count = "count",
   pass = "pass",
   lifestage = "lifestage",
   pass12 = "pass12",
-  id,
+  id = "sampleID",
   largemodel
 )
 }
