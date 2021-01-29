@@ -9,11 +9,12 @@
 #' @param pass a vector of integers giving the pass number of the observation
 #' @param id a vector of integers identifying an observation (a set of electrofishing passes)
 #' @param offset an possible offset for the linear predictor of capture probability
-#' @param verbose if TRUE stan optimiser messages are printed to the screen
+#' @param verbose if TRUE optimiser messages are printed to the screen
 #' @param init should initialisatiom be random?
 #' @param hessian if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb
 #' @param fit if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned
 #' @param sample_re should sample random effects be included
+#' @param control a list of control commands to be passed to optim
 #' @return glm type object
 #' @examples
 #' # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
@@ -72,6 +73,7 @@
 #' @importFrom Matrix sparse.model.matrix
 #' @importFrom mgcv gam
 #' @importFrom methods as
+#' @importFrom stats optim
 #'
 #' @export
 efp <- function(formula, data = NULL, pass = pass, id = id,
