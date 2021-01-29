@@ -23,8 +23,8 @@
 #' @importFrom stats aggregate pchisq qlogis fitted
 #'
 #' @export
-overdispersion <- function(data, siteID, visitID, count = "count",
-                           pass = "pass", lifestage = "lifestage", pass12 = "pass12", id,
+overdispersion <- function(data, siteID = "siteID", visitID = "visitID", count = "count",
+                           pass = "pass", lifestage = "lifestage", pass12 = "pass12", id = "sampleID",
                            largemodel) {
 
   # Subset the dataframe to select only the columns that will be used in the function
