@@ -198,13 +198,13 @@ od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
                               largemodel = large_model)
 ```
 
-    ## 3-pass model start time 2021-01-28 15:50:20
+    ## 3-pass model start time 2021-01-28 16:18:59
 
-    ## 3-pass model duration = 0.293s
+    ## 3-pass model duration = 0.158s
 
-    ## Site visit model start time 2021-01-28 15:50:20
+    ## Site visit model start time 2021-01-28 16:18:59
 
-    ## Site visit model duration = 0.125s
+    ## Site visit model duration = 0.134s
 
 View overdispersion estimate. The ‘disp’ column contains the estimates
 of overdispersion and the 3rd row contains the between-visit estimate

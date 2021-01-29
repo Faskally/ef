@@ -162,11 +162,11 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
       silent = !verbose
     )
 
-  if (verbose) {
-    control = list(trace = 1)
-  } else {
-    control = list()
-  }
+#  if (verbose) {
+#    control = list(trace = 1)
+#  } else {
+#    control = list()
+#  }
 
   #opt <- nlminb(obj$par, obj$fn, obj$gr, control = control)
   
