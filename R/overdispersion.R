@@ -6,13 +6,13 @@
 #' @param data dataframe containing EF data
 #' @param siteID site name or unique ID
 #' @param visitID a number identifying each unique visit
-#' @param count count of fish (defaults to "count")
-#' @param pass the EF pass number (defaults to "pass")
-#' @param lifestage the lifestage (defaults to "lifestage")
-#' @param pass12 categorical variable with 2 levels where the 1st pass
-#'            and subsequent passes are treated separately (defaults to "pass12")
-#' @param id sample ID
-#' @param largemodel the large model that captures most of the systematic
+#' @param count the number of fish caught for a particular combination of site visit, 
+#'              species, lifestage and pass (defaults to "count")
+#' @param pass EF pass number e.g. 1,2,3,4 (defaults to "pass")
+#' @param species fish species, e.g. salmon, trout (defaults to "species")
+#' @param lifestage lifestage e.g. fry, parr (defaults to "lifestage")
+#' @param id sample ID i.e. unique combinations of site visit, species & lifestage
+#' @param largemodel a large model that captures most of the systematic
 #'                variation in the data - this is specified before
 #'               running the overdispersion function
 #' @return a data.frame summarising overdispersion
@@ -24,224 +24,140 @@
 #'
 #' @export
 overdispersion <- function(data, siteID = "siteID", visitID = "visitID", count = "count",
-                           pass = "pass", lifestage = "lifestage", pass12 = "pass12", id = "sampleID",
+                           pass = "pass", id = "sampleID", species = "species", lifestage = "lifestage", 
                            largemodel) {
 
-  # Subset the dataframe to select only the columns that will be used in the function
-  varID <- c(siteID, visitID, count, pass, lifestage, pass12, id)
-
-  # Create a vector of names to standardise the naming convention in the function
-  varID2 <- c("siteID", "visitID", "count", "pass", "lifestage", "pass12", "id")
-
+  # organise data set with standard names
+  # varID are the supplied names
+  # varID2 are the standard names we will use in the code 
+  
+  varID <- c(siteID, visitID, count, pass, id, species, lifestage)
+  varID2 <- c("siteID", "visitID", "count", "pass", "id", "species", "lifestage")
+  
+  # check mandatory names are present
+  if (!all(c(siteID, visitID, count, pass, id) %in% names(data)))
+    stop("some mandatory variables are missing")
+  
+  # subset names in case species and lifestage are not in the dataframe
+  ok <- varID %in% names(data)
+  varID <- varID[ok]
+  varID2 <- varID2[ok]
+  
   # subset data
   data <- data[varID]
-
+  
   # rename columns
   names(data) <- varID2
-
+  
   # set visitID to a factor
   data$visitID <- as.factor(data$visitID)
-
+  
   # return the maximum number of EF passes for each visit
-  aggregatepass <- aggregate(pass ~ visitID, FUN = max, data = data)
-
+  # checks for missing passes
+  # checks for visits with only one pass
+  
+  # first check that pass is numeric
+  if (!is.numeric(data$pass))
+    stop("pass should be numeric")
+  
+  aggregatepass <- aggregate(pass ~ visitID, data = data, FUN = function(x) {
+    if (max(x) != length(unique(x))) 
+      stop("some visits have missing pass information")
+    if (max(x) == 1)
+      stop("some visits have only one pass")
+    max(x)
+  })
+  
   # rename the columns
   names(aggregatepass) <- c("visitID", "maxpass")
-
+  
   # set the visitID to be a factor
   aggregatepass$visitID <- as.factor(aggregatepass$visitID)
-
+  
   # join the data and the maximum number of passes together. Use
   # left_join to maintain the dataframe order
-  data <- left_join(data, aggregatepass, by = "visitID")
-
-  # split the dataframe by the maximum number of passes to get a list
-  # of dataframes where the total number of passes is either 2, 3 or 4
-  x <-
-    split(
-      data[
-        c("pass", "id", "count", "maxpass", "pass12", "lifestage", "visitID")
-      ],
-      data$maxpass
-    )
-
-  # add warnings if the list of dataframes includes site visits with
-  # less than 2 passes or more than 4 passes
-  if (min(as.numeric(names(x))) < 2 | (max(as.numeric(names(x))) > 4)) {
-    stop("pass number not between 2 and 4")
-  }
-
-
+  data <- dplyr::left_join(data, aggregatepass, by = "visitID")
+  
+  
+  # get species:lifestage grouping variable for saturated model
+  # variable has a separate value for each combination of species and lifestage
+  # deals with the standard case where species have the same lifestages
+  # deals also with the case e.g. where there are juvenile salmon and elver eels
+  # fitting the saturate model will also be slightly more efficient
+  
+  group_var <- c("species", "lifestage")
+  ok <- group_var %in% names(data)
+  group_var <- group_var[ok]
+  
+  if (!any(ok)) 
+    data$groupID <- "only_value" 
+  else 
+    data$groupID <- do.call("paste", data[group_var])
+  
+  
   ################
   #
   # SATURATED MODEL
   #
   ################
-
-  # create an empty dataframe to store the log likelihood and number
-  # of parameters for each model
-  Saturated <- data.frame(llik = as.numeric(), params = as.numeric())
-
-  # Produce a saturated model for 2, 3, and 4-pass data if present. '-1' prevents
+  
+  # Produce a saturated model for each visit. '-1' prevents
   # the model estimate of intercept, and avoids problems if the intercept for the
   # first sample is poorly estimated. This results in a separate estimate of
   # intercept for every sample. Hessian = FALSE prevents the return of the hessian
   # matrix for returning standard errors, and speeds up model fitting.
-
-
-  # NOTE: This next step repeats for 2, 3 and 4-pass data
-
-  # go to list of dataframes and check to see if 4 pass data recorded as "4" in list
-  if (max(as.numeric(names(x))) == 4) {
-
-    # Create a categorical variable for pass123 which
-    # treats passes 1 and 2 separately from 3 and 4
-    x[["4"]] <- within(x[["4"]], {
-      pass123 <- factor(pass)
-      levels(pass123)[levels(pass123) == "4"] <- "3"
-    })
-
-    # Record and print the system time
-    t1 <- Sys.time()
-    message("4-pass model start time ", t1)
-
-    # create a dataframe from the 4-pass data
-    d <- x[["4"]]
-
-    # drop levels to remove unused factor levels
-    d <- droplevels(d)
-
-    # split the dataframe by visitID to get a list of dataframes
-    # for each individual visit to speed up model fitting
-    v <-
-      split(
-        d[c("pass", "id", "count", "maxpass", "pass123", "lifestage")],
-        d$visitID
-      )
-    # create a blank dataframe to sore model outputs
-    out <- data.frame(llik = as.numeric(), params = as.numeric())
-
-    # loop over each dataframe in the list and extract the log likelihood and
-    # number of parameters (length of coefficients) from the saturated model for
-    # each site visit
-    for (i in 1:length(v)) {
-      m <- efp(count ~ -1 + lifestage:pass123,
-        pass = pass, id = id,
-        data = v[[i]], hessian = FALSE, verbose = FALSE
-      )
-      mod <-
-        data.frame(
-          llik = as.numeric(m$llik),
-          params = as.numeric(length(m$coefficients))
-        )
-
-      # rbind the model outputs with the blank 'out' dataframe - this will
-      # build up a list of model outputs during the looping process
-      out <- rbind(out, mod)
-    }
-
-    # sum all the log likelihoods and number of parameters from the saturated
-    # models for 4-pass data
-    sat4pass <-
-      data.frame(
-        llik = sum(out$llik),
-        nparam = sum(out$params)
-      )
-
-    # rbind the empty dataframe create outside the saturated function with the
-    # summed 4-pass saturated model data
-    Saturated <- rbind(Saturated, sat4pass)
-
-    # store and print the time that it took for the model to run
-    t2 <- Sys.time()
-    etime <- t2 - t1
-    message("4-pass model duration =", round(etime, 3), "s")
-  }
-
-  if (3 %in% (as.numeric(names(x)))) {
-    t1 <- Sys.time()
-    message("3-pass model start time ", t1)
-
-    d <- x[["3"]]
-    d <- droplevels(d)
-    v <-
-      split(
-        d[c("pass", "id", "count", "maxpass", "pass12", "lifestage")],
-        d$visitID
-      )
-    out <- data.frame(llik = numeric(0), params = integer(0))
-    for (i in 1:length(v)) {
-      m <- efp(count ~ -1 + lifestage:pass12,
-        pass = pass, id = id,
-        data = v[[i]], hessian = FALSE, verbose = FALSE
-      )
-      mod <-
-        data.frame(
-          llik = as.numeric(m$llik),
-          params = length(m$coefficients)
-        )
-      out <- rbind(out, mod)
-    }
-
-    sat3pass <-
-      data.frame(
-        llik = sum(out$llik),
-        nparam = sum(out$params)
-      )
-
-    Saturated <- rbind(Saturated, sat3pass)
-    t2 <- Sys.time()
-    etime <- t2 - t1
-    message("3-pass model duration = ", round(etime, 3), "s")
-  }
-
-  if (min(as.numeric(names(x))) == 2) {
-    t1 <- Sys.time()
-    message("2-pass model start time ", t1)
-
-    d <- x[["2"]]
-    d <- droplevels(d)
-    v <-
-      split(
-        d[c("pass", "id", "count", "maxpass", "lifestage")],
-        d$visitID
-      )
-    out <- data.frame(llik = numeric(0), params = integer(0))
-    for (i in 1:length(v)) {
-      m <- efp(count ~ -1 + lifestage,
-        pass = pass, id = id,
-        data = v[[i]], hessian = FALSE, verbose = FALSE
-      )
-
-      mod <-
-        data.frame(
-          llik = as.numeric(m$llik),
-          params = length(m$coefficients)
-        )
-      out <- rbind(out, mod)
-    }
-
-    sat2pass <-
-      data.frame(
-        llik = sum(out$llik),
-        nparam = sum(out$params)
-      )
-
-    Saturated <- rbind(Saturated, sat2pass)
-
-    t2 <- Sys.time()
-    etime <- t2 - t1
-    message("2-pass model duration =", etime)
-  }
-
-  # Create dataframe with the sum of the logliks and nparams from the 2, 3 and
-  # 4 pass data if you have it
-  saturated <-
-    data.frame(
-      llik = sum(Saturated$llik),
-      nparam = sum(Saturated$nparam)
+  
+  
+  # Record and print the system time
+  t1 <- Sys.time()
+  message("Saturated model start time ", t1)
+  
+  saturated <- by(data, data$visitID, function(x) {
+    
+    # drop unused factor levels in data - e.g. id which gets passed into efp
+    x <- droplevels(x)
+    
+    # check there is exactly one observation for each groupID and pass
+    if (!all(table(x$groupID, x$pass) == 1)) 
+      stop(
+        "unbalanced data: some visits don't have exactly one observation ", 
+        "for each combination of species, lifestage and pass"
+      )	
+    
+    # create pass_reduce, a variable which combines the last two 
+    # passes into a single category: 
+    # e.g. if there are three passes, then pass_reduce is the same as pass12
+    
+    x$pass_reduce <- pmin(x$pass, x$maxpass-1)
+    x$pass_reduce[x$pass_reduce == x$maxpass] <- x$maxpass - 1
+    
+    # combine this with groupID to get a saturated model formula
+    x$groupID <- do.call("paste", x[c("groupID", "pass_reduce")])
+    
+    # fit saturated model
+    m <- efp(
+      count ~ -1 + groupID, 
+      pass = pass, id = id, data = x, 
+      hessian = FALSE, verbose = FALSE
     )
-
+    
+    data.frame(llik = m$llik, nparam = length(m$coefficients))
+  })      
+  
+  # combine into a single data frame
+  saturated <- do.call("rbind", saturated)
+  
+  # sum over all visits
+  saturated <- data.frame(
+    llik = sum(saturated$llik), 
+    nparam = sum(saturated$nparam)
+  )
+  
+  
+  # store and print the time that it took for the model to run
+  t2 <- Sys.time()
+  etime <- t2 - t1
+  message("Saturated model duration =", round(etime, 3), "s")
 
   ################
   #
@@ -250,8 +166,8 @@ overdispersion <- function(data, siteID = "siteID", visitID = "visitID", count =
   ################
 
 
-  # The site-visit model has an extra parameter for each site-visit. Due to the
-  # number of  parameters, this model is fitted by conditioning on the fitted
+  # The site-visit model has an extra parameter for each site-visit (over the large model). 
+  # Due to the number of  parameters, this model is fitted by conditioning on the fitted
   # values from the large model and estimating the site-visit effect for each
   # site-visit in turn.
 
