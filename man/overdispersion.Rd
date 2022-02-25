@@ -10,9 +10,9 @@ overdispersion(
   visitID = "visitID",
   count = "count",
   pass = "pass",
-  lifestage = "lifestage",
-  pass12 = "pass12",
   id = "sampleID",
+  species = "species",
+  lifestage = "lifestage",
   largemodel
 )
 }
@@ -23,18 +23,18 @@ overdispersion(
 
 \item{visitID}{a number identifying each unique visit}
 
-\item{count}{count of fish (defaults to "count")}
+\item{count}{the number of fish caught for a particular combination of site visit,
+species, lifestage and pass (defaults to "count")}
 
-\item{pass}{the EF pass number (defaults to "pass")}
+\item{pass}{EF pass number e.g. 1,2,3,4 (defaults to "pass")}
 
-\item{lifestage}{the lifestage (defaults to "lifestage")}
+\item{id}{sample ID i.e. unique combinations of site visit, species & lifestage}
 
-\item{pass12}{categorical variable with 2 levels where the 1st pass
-and subsequent passes are treated separately (defaults to "pass12")}
+\item{species}{fish species, e.g. salmon, trout (defaults to "species")}
 
-\item{id}{sample ID}
+\item{lifestage}{lifestage e.g. fry, parr (defaults to "lifestage")}
 
-\item{largemodel}{the large model that captures most of the systematic
+\item{largemodel}{a large model that captures most of the systematic
 variation in the data - this is specified before
 running the overdispersion function}
 }

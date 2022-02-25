@@ -153,7 +153,7 @@ densdata <- left_join(densdata, probs, by = "sampleID")
 
 # Estimate Density
 
-Density (N/m<sup>-2</sup>) is estimated as \(\frac{counts}{area*P}\)
+Density (N/m<sup>-2</sup>) is estimated as $\\frac{counts}{area\*P}$
 
 ``` r
 densdata $ Density_Estimate <- densdata $ count / (densdata $ area *
@@ -162,7 +162,7 @@ densdata $ Density_Estimate <- densdata $ count / (densdata $ area *
 
 If you want to model counts directly (Poisson model), you need to have
 cumulative P and area in the offset. For a Poisson model the offset is
-\(\log({area*cumulativeP})\).
+log (*a**r**e**a*\**c**u**m**u**l**a**t**i**v**e**P*).
 
 ``` r
 densdata $ offset <- log(densdata $ area * densdata $ prob)
@@ -198,13 +198,13 @@ od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
                               largemodel = large_model)
 ```
 
-    ## 3-pass model start time 2021-01-28 16:18:59
+    ## Saturated model start time 2022-02-25 16:54:37
 
-    ## 3-pass model duration = 0.158s
+    ## Saturated model duration =0.172s
 
-    ## Site visit model start time 2021-01-28 16:18:59
+    ## Site visit model start time 2022-02-25 16:54:38
 
-    ## Site visit model duration = 0.134s
+    ## Site visit model duration = 0.105s
 
 View overdispersion estimate. The ‘disp’ column contains the estimates
 of overdispersion and the 3rd row contains the between-visit estimate
@@ -223,9 +223,7 @@ Compare models using the adjusted BIC function (Equation 4, [Millar *et
 al*.,
 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017))
 
-  - Full model
-
-<!-- end list -->
+-   Full model
 
 ``` r
 mfull <- efp(count ~ pass12 + lifestage + siteID + year,
@@ -236,9 +234,7 @@ BICadj(mfull, ef_data, od_estimate)
 
     ## [1] -3129.338
 
-  - Model without lifestage
-
-<!-- end list -->
+-   Model without lifestage
 
 ``` r
 mlife <- efp(count ~ pass12 + siteID + year,
