@@ -17,10 +17,10 @@
 BICadj <- function(model, data, overdispersion.output) {
 
   # The adjusted BIC value is calculated in a similar way to BIC, however the
-  # loglikelihood of the model is divided by the measure of between sample
-  # overdispersion, which makes it more stringent when adding or removing terms
-  # from the model.
+  # loglikelihood of the model is divided by the greatest measure of 
+  # overdispersion (within or between visits), which makes it more stringent 
+  # when adding or removing terms from the model.
 
-  -2 * model$llik / overdispersion.output[3, 5] +
+  -2 * model$llik / max(c(overdispersion.output[3, 5], overdispersion.output[2, 5])) +
    log(length(unique(paste(data$siteID, data$date)))) * length(model$coefficients)
 }
