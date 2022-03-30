@@ -13,7 +13,7 @@
 #' @param largemodel a large model that captures most of the systematic
 #'                variation in the data - this is specified before
 #'               running the overdispersion function
-#' @param largemodel passes control information to optimiser              
+#' @param control passes control information to optimiser              
 #' @return a data.frame summarising overdispersion
 #'
 #' @note ensure column names in function call are in inverted commas
@@ -24,7 +24,7 @@
 #'
 #' @export
 overdispersion <- function(data, siteID = "siteID", visitID = "visitID", count = "count",
-                           pass = "pass", id = "sampleID", largemodel, control) {
+                           pass = "pass", sampleID = "sampleID", largemodel, control) {
 
   # organise data set with standard names
   # varID are the supplied names

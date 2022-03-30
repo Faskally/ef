@@ -11,9 +11,8 @@ overdispersion(
   count = "count",
   pass = "pass",
   id = "sampleID",
-  species = "species",
-  lifestage = "lifestage",
-  largemodel
+  largemodel,
+  control
 )
 }
 \arguments{
@@ -21,22 +20,16 @@ overdispersion(
 
 \item{siteID}{site name or unique ID}
 
-\item{visitID}{a number identifying each unique visit}
+\item{visitID}{a number identifying each unique site visit}
 
 \item{count}{the number of fish caught for a particular combination of site visit,
 species, lifestage and pass (defaults to "count")}
 
 \item{pass}{EF pass number e.g. 1,2,3,4 (defaults to "pass")}
 
-\item{id}{sample ID i.e. unique combinations of site visit, species & lifestage}
+\item{largemodel}{passes control information to optimiser}
 
-\item{species}{fish species, e.g. salmon, trout (defaults to "species")}
-
-\item{lifestage}{lifestage e.g. fry, parr (defaults to "lifestage")}
-
-\item{largemodel}{a large model that captures most of the systematic
-variation in the data - this is specified before
-running the overdispersion function}
+\item{sampleID}{sample ID i.e. unique combinations of site visit, species & lifestage}
 }
 \value{
 a data.frame summarising overdispersion
