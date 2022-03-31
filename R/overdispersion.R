@@ -24,7 +24,7 @@
 #'
 #' @export
 overdispersion <- function(data, siteID = "siteID", visitID = "visitID", count = "count",
-                           pass = "pass", sampleID = "sampleID", largemodel, control) {
+                           pass = "pass", sampleID = "sampleID", largemodel, control = "control") {
 
   # organise data set with standard names
   # varID are the supplied names
