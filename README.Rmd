@@ -12,7 +12,7 @@ output:
 
 To instal the TMB version `ef` package run
 ```r
-remotes::install_github("faskally/ef@tmb")
+remotes::install_github("faskally/ef")
 ```
 
 
@@ -173,7 +173,7 @@ Use the overdispersion function in the ef package and specify the data, visit ID
 
 ```{r}
 od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
-                              siteID = "siteID", id = "sampleID",
+                              siteID = "siteID", sampleID = "sampleID",
                               largemodel = large_model)
 ```
 

@@ -10,7 +10,7 @@ Status](https://travis-ci.org/Faskally/ef.svg?branch=tmb)](https://travis-ci.org
 To instal the TMB version `ef` package run
 
 ``` r
-remotes::install_github("faskally/ef@tmb")
+remotes::install_github("faskally/ef")
 ```
 
 # Create Required Fields for Analysis
@@ -194,17 +194,17 @@ visit ID, site ID, sample ID and the large model.
 
 ``` r
 od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
-                              siteID = "siteID", id = "sampleID",
+                              siteID = "siteID", sampleID = "sampleID",
                               largemodel = large_model)
 ```
 
-    ## Saturated model start time 2022-02-25 16:54:37
+    ## Saturated model start time 2022-03-31 16:38:17
 
-    ## Saturated model duration =0.172s
+    ## Saturated model duration =0 secs
 
-    ## Site visit model start time 2022-02-25 16:54:38
+    ## Site visit model start time 2022-03-31 16:38:17
 
-    ## Site visit model duration = 0.105s
+    ## Site visit model duration = 0 secs
 
 View overdispersion estimate. The ‘disp’ column contains the estimates
 of overdispersion and the 3rd row contains the between-visit estimate
@@ -216,8 +216,8 @@ od_estimate
 
     ##                llik nparam  deviance df      disp            p
     ## saturated -1552.715     60        NA NA        NA           NA
-    ## sitevisit -1592.692     24  79.95387 36  2.220941 3.518106e-05
-    ## large     -1585.152      9 -15.07893 15 -1.005262 1.000000e+00
+    ## sitevisit -1616.474     24 127.51821 36  3.542172 3.693279e-12
+    ## large     -1585.152      9 -62.64327 15 -4.176218 1.000000e+00
 
 Compare models using the adjusted BIC function (Equation 4, [Millar *et
 al*.,
@@ -232,7 +232,7 @@ mfull <- efp(count ~ pass12 + lifestage + siteID + year,
 BICadj(mfull, ef_data, od_estimate)
 ```
 
-    ## [1] -3129.338
+    ## [1] 49.23404
 
 -   Model without lifestage
 
@@ -243,7 +243,7 @@ mlife <- efp(count ~ pass12 + siteID + year,
 BICadj(mlife, ef_data, od_estimate)
 ```
 
-    ## [1] -3156.317
+    ## [1] 46.71732
 
 ## contributing
 

@@ -12,7 +12,7 @@ overdispersion(
   pass = "pass",
   sampleID = "sampleID",
   largemodel,
-  control
+  control = "control"
 )
 }
 \arguments{
