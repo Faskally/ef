@@ -38,7 +38,7 @@ large_model <- efp(count ~ pass12 + lifestage + siteID + year,
                    data = ef_data, pass = pass, id = sampleID)
 
 od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
-                              siteID = "siteID", id = "sampleID",
+                              siteID = "siteID", sampleID = "sampleID",
                               largemodel = large_model)
 
 

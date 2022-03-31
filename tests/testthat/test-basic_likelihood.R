@@ -120,7 +120,7 @@ test_that("overdispersion estimate", {
 
   od_estimate <- overdispersion(
     data = ef_data, visitID = "visitID",
-    siteID = "siteID", id = "sampleID",
+    siteID = "siteID", sampleID = "sampleID",
     largemodel = large_model
   )
 
