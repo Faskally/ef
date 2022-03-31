@@ -10,7 +10,7 @@ overdispersion(
   visitID = "visitID",
   count = "count",
   pass = "pass",
-  id = "sampleID",
+  sampleID = "sampleID",
   largemodel,
   control
 )
@@ -27,9 +27,13 @@ species, lifestage and pass (defaults to "count")}
 
 \item{pass}{EF pass number e.g. 1,2,3,4 (defaults to "pass")}
 
-\item{largemodel}{passes control information to optimiser}
-
 \item{sampleID}{sample ID i.e. unique combinations of site visit, species & lifestage}
+
+\item{largemodel}{a large model that captures most of the systematic
+variation in the data - this is specified before
+running the overdispersion function}
+
+\item{control}{passes control information to optimiser}
 }
 \value{
 a data.frame summarising overdispersion
