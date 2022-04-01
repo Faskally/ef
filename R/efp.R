@@ -82,13 +82,20 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
 
   # some checks
   if (is.null(data)) stop("must supply data")
-
+  
   # get pass information
   pass <- substitute(pass)
   pass <- eval(pass, data, environment(formula))
   # get id
   id <- substitute(id)
   id <- eval(id, data, environment(formula))
+  
+  # this is necessary to ensure that passes are ordered within samples so that
+  # the order of input data and model outputs match. Likelihood function 
+  # requires data ordered by pass.
+  if (any(tapply(pass, id, is.unsorted))) {
+    stop("data must be sorted by pass")
+  }
 
   # set up offset
   if (is.null(offset)) {
@@ -113,8 +120,14 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   }
 
   # get data for likelihood
-  ord <- order(id, pass)
-
+  ord_output <- order(id, pass)
+  if (sample_re) {
+    stop("Not coded yet: need to ensure output is in same order as input data")
+    ord <- ord_output
+  } else {
+    ord <- 1:nrow(data)
+  }
+  
   X <- Gfit[ord, , drop = FALSE]
   X <- as(X, "dgTMatrix")
   if (sample_re) {
@@ -182,14 +195,17 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   
   # set up output object
   out <- list()
-
+  
   # extract transformed parameters
   out$p <- unlist(obj$report()$ps)
-
+  # Re-order to match input data
+  out$p <- out$p[order(ord_output)]
+  
   fx_pars <- grep("beta", names(opt$par))
   out$sdrep <- sdreport(obj)
   out$rep <- obj$report()
-  # keep data for reffiting
+  # keep data for re-fitting
+  # efdat needs to be reordered to be compatible with other structures 
   out$data <- data
   out$formula <- formula # for printing and summary
   out$llik <- -1 * obj$fn(opt$par)
