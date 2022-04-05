@@ -7,7 +7,7 @@ Status](https://travis-ci.org/Faskally/ef.svg?branch=tmb)](https://travis-ci.org
 
 ## installation
 
-To instal the TMB version `ef` package run
+To install the latest version `ef` package run
 
 ``` r
 remotes::install_github("faskally/ef")
@@ -45,6 +45,12 @@ overdispersion function (see below).
 ef_data$visitID <- factor(paste(ef_data$date, ef_data$siteID))
 ```
 
+Create a factor for year
+
+``` r
+ef_data$fyear <- factor(ef_data$year)
+```
+
 # Fit a Model
 
 Fit a simple model. This contains a factor for pass (2 levels),
@@ -58,32 +64,32 @@ for further details)
 ``` r
 m1 <-
   efp(
-    count ~ pass12 + lifestage + siteID + year,
+    count ~ siteID + fyear + pass12 + lifestage,
     data = ef_data, pass = pass, id = sampleID
   )
 ```
 
     ## 
     ## Call:
-    ## efp(formula = count ~ pass12 + lifestage + siteID + year, data = ef_data, 
+    ## efp(formula = count ~ siteID + fyear + pass12 + lifestage, data = ef_data, 
     ##     pass = pass, id = sampleID)
     ## 
     ## Formula:
-    ## count ~ pass12 + lifestage + siteID + year
+    ## count ~ siteID + fyear + pass12 + lifestage
     ## 
     ## No random effects
     ## 
     ## Coefficients:
     ##                Estimate Std. Error  z value Pr(>|z^2|)
     ## (Intercept)    0.652301     0.1723  3.78656  1.527e-04
-    ## pass122       -0.239160     0.1311 -1.82436  6.810e-02
-    ## lifestageParr  0.590641     0.1210  4.88208  1.050e-06
     ## siteIDSite2    0.074540     0.1354  0.55059  5.819e-01
     ## siteIDSite3   -0.023719     0.1473 -0.16098  8.721e-01
-    ## year2012      -0.209949     0.1736 -1.20936  2.265e-01
-    ## year2013       0.046976     0.1855  0.25317  8.001e-01
-    ## year2014       0.358431     0.1834  1.95389  5.071e-02
-    ## year2015      -0.004013     0.2114 -0.01899  9.849e-01
+    ## fyear2012     -0.209949     0.1736 -1.20936  2.265e-01
+    ## fyear2013      0.046976     0.1855  0.25317  8.001e-01
+    ## fyear2014      0.358431     0.1834  1.95389  5.071e-02
+    ## fyear2015     -0.004013     0.2114 -0.01899  9.849e-01
+    ## pass122       -0.239160     0.1311 -1.82436  6.810e-02
+    ## lifestageParr  0.590641     0.1210  4.88208  1.050e-06
     ## 
     ## Degrees of Freedom: 90 Total (i.e. Null);  81 Residual
     ## AIC: 3188
@@ -117,7 +123,7 @@ Reshape to get capture probability by species x lifestage x site visit x
 pass. This facilitates the summary of *P*.
 
 ``` r
-probs <- cast(ef_data, sampleID ~ pass)
+probs <- cast(ef_data, formula = sampleID ~ pass, value = "prob")
 ```
 
 Get cumulative capture probability by sampleID (see [Glover *et al*.,
@@ -170,7 +176,7 @@ densdata $ offset <- log(densdata $ area * densdata $ prob)
 
 Plot to check
 
-![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 # Comparing Models
 
@@ -185,7 +191,7 @@ visit-wise and saturated model (see [Millar *et al*.,
 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017)):
 
 ``` r
-large_model <- efp(count ~ pass12 + lifestage + siteID + year,
+large_model <- efp(count ~ fyear + pass12 + lifestage,
                    data = ef_data, pass = pass, id = sampleID)
 ```
 
@@ -194,21 +200,22 @@ visit ID, site ID, sample ID and the large model.
 
 ``` r
 od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
-                              siteID = "siteID", sampleID = "sampleID",
+                              sampleID = "sampleID",
+                              control = list(maxit = 100),
                               largemodel = large_model)
 ```
 
-    ## Saturated model start time 2022-03-31 16:38:17
+    ## Saturated model start time 2022-04-05 14:40:36
 
     ## Saturated model duration =0 secs
 
-    ## Site visit model start time 2022-03-31 16:38:17
+    ## Site visit model start time 2022-04-05 14:40:37
 
     ## Site visit model duration = 0 secs
 
 View overdispersion estimate. The ‘disp’ column contains the estimates
-of overdispersion and the 3rd row contains the between-visit estimate
-that is used to adjust the BIC.
+of within and between sample overdispersion. The largest of these values
+is used to adjust the BIC.
 
 ``` r
 od_estimate
@@ -216,8 +223,8 @@ od_estimate
 
     ##                llik nparam  deviance df      disp            p
     ## saturated -1552.715     60        NA NA        NA           NA
-    ## sitevisit -1616.474     24 127.51821 36  3.542172 3.693279e-12
-    ## large     -1585.152      9 -62.64327 15 -4.176218 1.000000e+00
+    ## sitevisit -1616.681     22 127.93237 38  3.366641 1.149834e-11
+    ## large     -1585.472      7 -62.41809 15 -4.161206 1.000000e+00
 
 Compare models using the adjusted BIC function (Equation 4, [Millar *et
 al*.,
@@ -226,24 +233,24 @@ al*.,
 -   Full model
 
 ``` r
-mfull <- efp(count ~ pass12 + lifestage + siteID + year,
+mfull <- efp(count ~ siteID + year + lifestage + pass12,
              data = ef_data, pass = pass, id = sampleID)
 
 BICadj(mfull, ef_data, od_estimate)
 ```
 
-    ## [1] 49.23404
+    ## [1] 49.15355
 
 -   Model without lifestage
 
 ``` r
-mlife <- efp(count ~ pass12 + siteID + year,
+mlife <- efp(count ~ siteID + year + pass12,
              data = ef_data, pass = pass, id = sampleID)
 
 BICadj(mlife, ef_data, od_estimate)
 ```
 
-    ## [1] 46.71732
+    ## [1] 46.63622
 
 ## contributing
 
