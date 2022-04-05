@@ -6,7 +6,6 @@
 \usage{
 overdispersion(
   data,
-  siteID = "siteID",
   visitID = "visitID",
   count = "count",
   pass = "pass",
