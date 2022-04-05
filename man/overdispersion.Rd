@@ -18,8 +18,6 @@ overdispersion(
 \arguments{
 \item{data}{dataframe containing EF data}
 
-\item{siteID}{site name or unique ID}
-
 \item{visitID}{a number identifying each unique site visit}
 
 \item{count}{the number of fish caught for a particular combination of site visit,

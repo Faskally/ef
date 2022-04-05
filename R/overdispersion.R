@@ -22,7 +22,7 @@
 #' @importFrom stats aggregate pchisq qlogis fitted
 #'
 #' @export
-overdispersion <- function(data, siteID = "siteID", visitID = "visitID", count = "count",
+overdispersion <- function(data, visitID = "visitID", count = "count",
                            pass = "pass", sampleID = "sampleID", largemodel, control = "control") {
 
   # organise data set with standard names
