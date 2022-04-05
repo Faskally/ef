@@ -186,10 +186,11 @@ overdispersion <- function(data, visitID = "visitID", count = "count",
   
   # estimate an intercept for each site visit
   sitevisit <- by(data, data$visitID, function(x) {
+    x <- droplevels(x)
     m <-
       efp(
         count ~ 1,
-        pass = pass, id = sampleID, data = droplevels(x),
+        pass = pass, id = sampleID, data = x,
         control = control,
         offset = x$p, hessian = FALSE, verbose = FALSE
       )
