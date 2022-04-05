@@ -157,7 +157,7 @@ overdispersion <- function(data, visitID = "visitID", count = "count",
   # store and print the time that it took for the model to run
   t2 <- Sys.time()
   etime <- difftime(t2, t1, units = "secs")
-  message("Saturated model duration =", round(etime, 0), " secs")
+  message("Saturated model duration = ", round(etime, 0), " secs")
   
 
   ################
