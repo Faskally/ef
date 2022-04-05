@@ -10,7 +10,7 @@ output:
 
 ## installation
 
-To instal the TMB version `ef` package run
+To install the latest version `ef` package run
 ```r
 remotes::install_github("faskally/ef")
 ```
@@ -51,6 +51,11 @@ Create a visitID for unique site visits. This is required by the overdispersion 
 ef_data$visitID <- factor(paste(ef_data$date, ef_data$siteID))
 ```
 
+Create a factor for year
+```{r}
+ef_data$fyear <- factor(ef_data$year)
+```
+
 # Fit a Model
 
 
@@ -59,7 +64,7 @@ Fit a simple model. This contains a factor for pass (2 levels), lifestage (2 lev
 ```{r results = 'hide', warning = FALSE, message = FALSE}
 m1 <-
   efp(
-    count ~ pass12 + lifestage + siteID + year,
+    count ~ siteID + fyear + pass12 + lifestage,
     data = ef_data, pass = pass, id = sampleID
   )
 ```
@@ -96,7 +101,7 @@ counts <- aggregate(count ~ sampleID, ef_data, sum)
 Reshape to get capture probability by species x lifestage x site visit x pass. This facilitates the summary of _P_.
 
 ```{r results = 'hide', warning = FALSE, message = FALSE}
-probs <- cast(ef_data, sampleID ~ pass)
+probs <- cast(ef_data, formula = sampleID ~ pass, value = "prob")
 ```
 
 Get cumulative capture probability by sampleID (see [Glover _et al_., 2018](https://www.sciencedirect.com/science/article/pii/S1470160X18303534))
@@ -151,7 +156,7 @@ Plot to check
 ```{r echo = F, fig.width = 6, fig.height = 4.5}
 densdata <- densdata[order(densdata $ year), ]
 
-xyplot(Density_Estimate ~ year | lifestage, data = densdata, groups = siteID,
+xyplot(Density_Estimate ~ fyear | lifestage, data = densdata, groups = siteID,
        type = 'b', auto.key = T, scales = list(alternating = F),
        xlab = "Year", ylab = expression(paste("Fish m"^-2)))
 ```
@@ -165,7 +170,7 @@ Because electrofishing count data are typically overdispersed and because the mo
 Overdispersion is estimated by fitting a large model that captures most of the systematic variation in the data and comparing this to a visit-wise and saturated model (see [Millar _et al_., 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017)):
 
 ```{r}
-large_model <- efp(count ~ pass12 + lifestage + siteID + year,
+large_model <- efp(count ~ fyear + pass12 + lifestage,
                    data = ef_data, pass = pass, id = sampleID)
 ```
 
@@ -173,11 +178,12 @@ Use the overdispersion function in the ef package and specify the data, visit ID
 
 ```{r}
 od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
-                              siteID = "siteID", sampleID = "sampleID",
+                              sampleID = "sampleID",
+                              control = list(maxit = 100),
                               largemodel = large_model)
 ```
 
-View overdispersion estimate. The 'disp' column contains the estimates of overdispersion and the 3rd row contains the between-visit estimate that is used to adjust the BIC.
+View overdispersion estimate. The 'disp' column contains the estimates of within and between sample overdispersion. The largest of these values is used to adjust the BIC.
 
 ```{r}
 od_estimate
@@ -188,7 +194,7 @@ Compare models using the adjusted BIC function (Equation 4, [Millar _et al_., 20
   * Full model
 
 ```{r}
-mfull <- efp(count ~ pass12 + lifestage + siteID + year,
+mfull <- efp(count ~ siteID + year + lifestage + pass12,
              data = ef_data, pass = pass, id = sampleID)
 
 BICadj(mfull, ef_data, od_estimate)
@@ -197,7 +203,7 @@ BICadj(mfull, ef_data, od_estimate)
   * Model without lifestage
 
 ```{r}
-mlife <- efp(count ~ pass12 + siteID + year,
+mlife <- efp(count ~ siteID + year + pass12,
              data = ef_data, pass = pass, id = sampleID)
 
 BICadj(mlife, ef_data, od_estimate)

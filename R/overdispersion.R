@@ -4,7 +4,6 @@
 #'
 #'
 #' @param data dataframe containing EF data
-#' @param siteID site name or unique ID
 #' @param visitID a number identifying each unique site visit
 #' @param count the number of fish caught for a particular combination of site visit, 
 #'              species, lifestage and pass (defaults to "count")
@@ -30,8 +29,8 @@ overdispersion <- function(data, siteID = "siteID", visitID = "visitID", count =
   # varID are the supplied names
   # varID2 are the standard names we will use in the code 
   
-  varID <- c(siteID, visitID, count, pass, sampleID)
-  varID2 <- c("siteID", "visitID", "count", "pass", "sampleID")
+  varID <- c(visitID, count, pass, sampleID)
+  varID2 <- c("visitID", "count", "pass", "sampleID")
   
   # check mandatory names are present
   if (!all(varID %in% names(data)))
@@ -190,7 +189,7 @@ overdispersion <- function(data, siteID = "siteID", visitID = "visitID", count =
     m <-
       efp(
         count ~ 1,
-        pass = pass, id = sampleID, data = x,
+        pass = pass, id = sampleID, data = droplevels(x),
         control = control,
         offset = x$p, hessian = FALSE, verbose = FALSE
       )
