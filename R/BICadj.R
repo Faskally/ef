@@ -4,17 +4,13 @@
 #'
 #'
 #' @param model a fitted ef model
-#' @param data the data used to fit the model
-#' @param overdispersion.output output form the function \link{overdispersion}
+#' @param overdispersion.output output from the function \link{overdispersion}
 #' @return the adjusted BIC
 #'
-#' @note When calling the function, you need to specify the data source for
-#'   the model so that the number of site visits can be determined.
-#'   You also need to specify the output from the overdispersion model
-#'   to get the measure
+#' @note VisitID calculated from the data contained in the model object
 #'
 #' @export
-BICadj <- function(model, data, overdispersion.output) {
+BICadj <- function(model, overdispersion.output) {
 
   # The adjusted BIC value is calculated in a similar way to BIC, however the
   # loglikelihood of the model is divided by the greatest measure of 
