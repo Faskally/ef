@@ -4,14 +4,12 @@
 \alias{BICadj}
 \title{Adjusted BIC function}
 \usage{
-BICadj(model, data, overdispersion.output)
+BICadj(model, overdispersion.output)
 }
 \arguments{
 \item{model}{a fitted ef model}
 
-\item{data}{the data used to fit the model}
-
-\item{overdispersion.output}{output form the function \link{overdispersion}}
+\item{overdispersion.output}{output from the function \link{overdispersion}}
 }
 \value{
 the adjusted BIC
@@ -20,8 +18,5 @@ the adjusted BIC
 Complete function for returning overdispersion estimates
 }
 \note{
-When calling the function, you need to specify the data source for
-the model so that the number of site visits can be determined.
-You also need to specify the output from the overdispersion model
-to get the measure
+VisitID calculated from the data contained in the model object
 }
