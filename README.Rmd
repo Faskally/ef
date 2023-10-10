@@ -197,7 +197,7 @@ Compare models using the adjusted BIC function (Equation 4, [Millar _et al_., 20
 mfull <- efp(count ~ siteID + year + lifestage + pass12,
              data = ef_data, pass = pass, id = sampleID)
 
-BICadj(mfull, ef_data, od_estimate)
+BICadj(mfull, od_estimate)
 ```
 
   * Model without lifestage
@@ -206,7 +206,7 @@ BICadj(mfull, ef_data, od_estimate)
 mlife <- efp(count ~ siteID + year + pass12,
              data = ef_data, pass = pass, id = sampleID)
 
-BICadj(mlife, ef_data, od_estimate)
+BICadj(mlife, od_estimate)
 ```
 
 ## contributing

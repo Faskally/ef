@@ -159,7 +159,7 @@ densdata <- left_join(densdata, probs, by = "sampleID")
 
 # Estimate Density
 
-Density (N/m<sup>-2</sup>) is estimated as $\\frac{counts}{area\*P}$
+Density (N/m<sup>-2</sup>) is estimated as $\frac{counts}{area*P}$
 
 ``` r
 densdata $ Density_Estimate <- densdata $ count / (densdata $ area *
@@ -168,7 +168,7 @@ densdata $ Density_Estimate <- densdata $ count / (densdata $ area *
 
 If you want to model counts directly (Poisson model), you need to have
 cumulative P and area in the offset. For a Poisson model the offset is
-log (*a**r**e**a*\**c**u**m**u**l**a**t**i**v**e**P*).
+$\log({area*cumulativeP})$.
 
 ``` r
 densdata $ offset <- log(densdata $ area * densdata $ prob)
@@ -176,7 +176,7 @@ densdata $ offset <- log(densdata $ area * densdata $ prob)
 
 Plot to check
 
-![](README_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 # Comparing Models
 
@@ -205,11 +205,11 @@ od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
                               largemodel = large_model)
 ```
 
-    ## Saturated model start time 2022-04-05 14:40:36
+    ## Saturated model start time 2023-10-10 17:02:30.602148
 
-    ## Saturated model duration =0 secs
+    ## Saturated model duration = 0 secs
 
-    ## Site visit model start time 2022-04-05 14:40:37
+    ## Site visit model start time 2023-10-10 17:02:30.800149
 
     ## Site visit model duration = 0 secs
 
@@ -221,36 +221,36 @@ is used to adjust the BIC.
 od_estimate
 ```
 
-    ##                llik nparam  deviance df      disp            p
-    ## saturated -1552.715     60        NA NA        NA           NA
-    ## sitevisit -1616.681     22 127.93237 38  3.366641 1.149834e-11
-    ## large     -1585.472      7 -62.41809 15 -4.161206 1.000000e+00
+    ##                llik nparam deviance df      disp          p
+    ## saturated -1552.715     60       NA NA        NA         NA
+    ## sitevisit -1579.952     22 54.47317 38 1.4335045 0.04057796
+    ## large     -1585.472      7 11.04111 15 0.7360738 0.74967497
 
 Compare models using the adjusted BIC function (Equation 4, [Millar *et
 al*.,
 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017))
 
--   Full model
+- Full model
 
 ``` r
 mfull <- efp(count ~ siteID + year + lifestage + pass12,
              data = ef_data, pass = pass, id = sampleID)
 
-BICadj(mfull, ef_data, od_estimate)
+BICadj(mfull, od_estimate)
 ```
 
-    ## [1] 49.15355
+    ## [1] 2235.949
 
--   Model without lifestage
+- Model without lifestage
 
 ``` r
 mlife <- efp(count ~ siteID + year + pass12,
              data = ef_data, pass = pass, id = sampleID)
 
-BICadj(mlife, ef_data, od_estimate)
+BICadj(mlife, od_estimate)
 ```
 
-    ## [1] 46.63622
+    ## [1] 2250.261
 
 ## contributing
 

@@ -34,46 +34,45 @@ test_that("as.gam", {
 
 # Comparing Models
 
-if (FALSE) {
-  large_model <- efp(count ~ pass12 + lifestage + siteID + year,
-    data = ef_data, pass = pass, id = sampleID
-  )
 
-  od_estimate <- overdispersion(
-    data = ef_data, visitID = "visitID",
-    siteID = "siteID", sampleID = "sampleID",
-    largemodel = large_model
-  )
+large_model <- efp(count ~ pass12 + lifestage + siteID + year,
+  data = ef_data, pass = pass, id = sampleID
+)
 
-
-  test_that("od_estimate", {
-    #  expect_equal(str_length("a"), 1)
-    #  expect_equal(str_length("ab"), 2)
-    #  expect_equal(str_length("abc"), 3)
-  })
-
-  mfull <- efp(count ~ pass12 + lifestage + siteID + year,
-    data = ef_data, pass = pass, id = sampleID
-  )
-
-  BICadj(mfull, ef_data, od_estimate)
-
-  test_that("BICadj", {
-    #  expect_equal(str_length("a"), 1)
-    #  expect_equal(str_length("ab"), 2)
-    #  expect_equal(str_length("abc"), 3)
-  })
+od_estimate <- overdispersion(
+  data = ef_data, visitID = "visitID",
+  siteID = "siteID", sampleID = "sampleID",
+  largemodel = large_model
+)
 
 
-  mlife <- efp(count ~ pass12 + siteID + year,
-    data = ef_data, pass = pass, id = sampleID
-  )
+test_that("od_estimate", {
+  #  expect_equal(str_length("a"), 1)
+  #  expect_equal(str_length("ab"), 2)
+  #  expect_equal(str_length("abc"), 3)
+})
 
-  BICadj(mlife, ef_data, od_estimate)
+mfull <- efp(count ~ pass12 + lifestage + siteID + year,
+  data = ef_data, pass = pass, id = sampleID
+)
 
-  test_that("BICadj", {
-    #  expect_equal(str_length("a"), 1)
-    #  expect_equal(str_length("ab"), 2)
-    #  expect_equal(str_length("abc"), 3)
-  })
-}
+BICadj(mfull, od_estimate)
+
+test_that("BICadj", {
+  #  expect_equal(str_length("a"), 1)
+  #  expect_equal(str_length("ab"), 2)
+  #  expect_equal(str_length("abc"), 3)
+})
+
+
+mlife <- efp(count ~ pass12 + siteID + year,
+  data = ef_data, pass = pass, id = sampleID
+)
+
+BICadj(mlife, od_estimate)
+
+test_that("BICadj", {
+  #  expect_equal(str_length("a"), 1)
+  #  expect_equal(str_length("ab"), 2)
+  #  expect_equal(str_length("abc"), 3)
+})
