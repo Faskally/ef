@@ -34,7 +34,13 @@ smooth_block <- function(X, S, centred = FALSE, N = NULL) {
   k <- ncol(X)
 
   if (is.null(N)) {
-    N <- null_space(Reduce(`+`, lapply(S, function(s) s / max(abs(s@x)))))
+    Ssum <- Reduce(`+`, lapply(S, function(s) s / max(abs(s@x))))
+    if (isDiagonal(Ssum) && all(diag(Ssum) > 0)) {
+      # everything is penalised, as for independent random effects
+      N <- matrix(0, k, 0)
+    } else {
+      N <- null_space(Ssum)
+    }
   }
   Ng <- N
   const <- NULL
