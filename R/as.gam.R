@@ -44,8 +44,11 @@ as.gam <- function(object) {
 
 # gam container holding the efp estimates, used for prediction and plotting
 efp_gam <- function(object) {
-  # make a gam container from the original setup
-  g1 <- gam(G = object $ Gsetup)
+  # make a gam container from the original setup. The smoothing parameters
+  # are fixed so that this is quick: the gam fit itself is not used.
+  G <- object $ Gsetup
+  G$sp[] <- 1
+  g1 <- gam(G = G)
 
   # columns of the design matrix that were estimated
   whichkeep <- object$gam_cols
