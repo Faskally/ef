@@ -84,7 +84,7 @@ formula.efp <- function(x, ...) {
 }
 
 #' @rdname efp-methods
-#' @export
+#' @exportS3Method summary efp
 summary.efp <- function(object, ...) {
   out <- object[c("call", "formula", "aic", "df.null", "df.residual", "convergence")]
   out$logLik <- logLik(object)
@@ -106,7 +106,7 @@ summary.efp <- function(object, ...) {
 }
 
 #' @rdname efp-methods
-#' @export
+#' @exportS3Method print summary.efp
 print.summary.efp <- function(x, digits = max(3L, getOption("digits") - 3L),  ...) {
 
   cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"),

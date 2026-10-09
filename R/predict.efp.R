@@ -77,19 +77,13 @@ predict.efp <- function(object, newdata = NULL,
     offset <- 0
   }
 
-  # redundant parameters were not estimated and are zero
-  b <- numeric(ncol(X))
-  b[object$fx_cols] <- object$coefficients
-  b[object$re_cols] <- object$random
-
-  fit <- drop(X %*% b) + offset
+  fit <- drop(X %*% object$gam_coefficients) + offset
 
   if (se.fit) {
     if (!is.matrix(object$Vp)) {
       stop("standard errors are not available: refit the model with hessian = TRUE")
     }
-    whichkeep <- sort(c(object$fx_cols, object$re_cols))
-    Xfit <- X[, whichkeep, drop = FALSE]
+    Xfit <- X[, object$gam_cols, drop = FALSE]
     se <- sqrt(pmax(0, rowSums((Xfit %*% object$Vp) * Xfit)))
   }
 

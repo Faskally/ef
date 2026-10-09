@@ -1,0 +1,55 @@
+#' Random walk penalties for smooth terms
+#'
+#' Creates a first or second order random walk penalty matrix for the levels
+#' of an ordered covariate, for use with the Markov random field (mrf) basis
+#' of \code{mgcv}. This is the recommended way to include smooth terms in
+#' \code{\link{efp}}: the basis and the penalty are both sparse, so models
+#' are quick to fit even when there are many levels.
+#'
+#' @param levels the levels of the covariate, in order, and assumed to be
+#'   equally spaced. A level is needed for every step of the random walk,
+#'   including any for which there are no data.
+#' @param order the order of the random walk, 1 or 2
+#' @return a square matrix with one row and column for each level, with the
+#'   levels as dimnames
+#'
+#' @details
+#' A first order random walk (\code{order = 1}) penalises the differences
+#' between neighbouring levels, and shrinks towards a constant. A second
+#' order random walk (\code{order = 2}) penalises the second differences, and
+#' shrinks towards a linear trend. In both cases the standard deviation
+#' estimated by \code{\link{efp}} is the standard deviation of the steps
+#' of the random walk, on the logit scale.
+#'
+#' To use the penalty, the covariate must be a factor with the same levels
+#' as the penalty, see the examples.
+#'
+#' @examples
+#' rw_penalty(1:5)
+#' rw_penalty(1:5, order = 2)
+#'
+#' # a first order random walk over day of the year
+#' data(ef_data)
+#' ef_data$sampleID <- factor(paste(ef_data$date, ef_data$siteID,
+#'                                  ef_data$lifestage, ef_data$species))
+#' days <- min(ef_data$doy):max(ef_data$doy)
+#' ef_data$fdoy <- factor(ef_data$doy, levels = days)
+#' rw1 <- rw_penalty(days)
+#'
+#' m1 <- efp(count ~ lifestage + s(fdoy, bs = "mrf", xt = list(penalty = rw1)),
+#'           data = ef_data, pass = pass, id = sampleID)
+#' m1
+#'
+#' @export
+rw_penalty <- function(levels, order = 1) {
+  levels <- as.character(levels)
+  k <- length(levels)
+  if (anyDuplicated(levels)) stop("levels must be unique")
+  if (!order %in% 1:2) stop("order must be 1 or 2")
+  if (k <= order) stop("there must be more than ", order, " levels")
+
+  D <- diff(diag(k), differences = order)
+  S <- crossprod(D)
+  dimnames(S) <- list(levels, levels)
+  S
+}

@@ -27,9 +27,9 @@
 
 \method{formula}{efp}(x, ...)
 
-\method{summary}{efp}(object, ...)
+summary.efp(object, ...)
 
-\method{print}{summary.efp}(x, digits = max(3L, getOption("digits") - 3L), ...)
+print.summary.efp(x, digits = max(3L, getOption("digits") - 3L), ...)
 
 \method{residuals}{efp}(object, ...)
 
@@ -39,7 +39,7 @@
 
 \method{model.matrix}{efp}(object, ...)
 
-\method{print}{efp}(x, digits = max(3L, getOption("digits") - 3L), ...)
+print.efp(x, digits = max(3L, getOption("digits") - 3L), ...)
 }
 \arguments{
 \item{object, x}{an efp fitted model}

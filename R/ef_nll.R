@@ -33,9 +33,27 @@ ef_nll <- function(params, efdat) {
 
   sigma <- exp(log_sigma)
 
-  if (length(alpha)) {
-    # add random effects, one sigma per random effect term
-    nll <- nll - sum(dnorm(alpha, 0, sigma[efdat$re_id], log = TRUE))
+  # add random effects and penalised smooths
+  for (block in efdat$blocks) {
+    u <- alpha[block$idx]
+    if (is.null(block$S)) {
+      # independent random effects
+      nll <- nll - sum(dnorm(u, 0, sigma[block$sig], log = TRUE))
+    } else if (length(block$S) == 1) {
+      # gaussian with precision matrix S / sigma^2
+      Su <- drop(as.matrix(block$S[[1]] %*% u))
+      nll <- nll -
+        length(u) * (-log_sigma[block$sig] - 0.5 * log(2 * pi)) -
+        0.5 * block$logdet +
+        0.5 * sum(u * Su) / sigma[block$sig]^2
+    } else {
+      # several penalties: the precision matrix is sum_j S_j / sigma_j^2
+      Q <- block$S[[1]] / sigma[block$sig[1]]^2
+      for (j in seq_along(block$S)[-1]) {
+        Q <- Q + block$S[[j]] / sigma[block$sig[j]]^2
+      }
+      nll <- nll - dgmrf(u, 0, Q, log = TRUE)
+    }
   }
 
   for (i in seq_along(idx)) {

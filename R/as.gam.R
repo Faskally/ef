@@ -29,7 +29,7 @@ as.gam <- function(object) {
   g1 <- efp_gam(object)
 
   # columns of the design matrix that were estimated
-  whichkeep <- sort(c(object$fx_cols, object$re_cols))
+  whichkeep <- object$gam_cols
   redundant <- names(g1$coefficients[-1 * whichkeep])
   if (length(redundant)) {
     warning(
@@ -38,7 +38,7 @@ as.gam <- function(object) {
     )
   }
 
-  message("Note that, although predictions and plots will be correct\n smoothing parameter estimates are all wrong as no smoothing took place!")
+  message("Note that, although predictions and plots will be correct\n the smoothing parameters and degrees of freedom in the gam object are not those estimated by efp!")
   g1
 }
 
@@ -48,12 +48,10 @@ efp_gam <- function(object) {
   g1 <- gam(G = object $ Gsetup)
 
   # columns of the design matrix that were estimated
-  whichkeep <- sort(c(object$fx_cols, object$re_cols))
+  whichkeep <- object$gam_cols
 
   # assign coefficients to gam container
-  g1$coefficients[] <- 0
-  g1$coefficients[object$fx_cols] <- object $ coefficients
-  g1$coefficients[object$re_cols] <- object $ random
+  g1$coefficients[] <- object$gam_coefficients
 
   # assign variance matrix to gam container
   g1$Vp[] <- 0

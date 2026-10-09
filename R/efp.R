@@ -14,6 +14,10 @@
 #' @param hessian if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb
 #' @param fit if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned
 #' @param control a list of control commands to be passed to \code{\link[stats]{optim}}
+#' @param sparse if TRUE (the default) penalised smooths are set up so that
+#'   sparse bases and penalties stay sparse, see Details. If FALSE the
+#'   constrained basis and penalties from \code{mgcv} are used, which are
+#'   dense. Both give the same model, so this is mainly useful for testing.
 #' @return If \code{fit = TRUE}, an object of class \code{efp}, a list which
 #'   inherits from \code{glm}, containing among other things the fixed effect
 #'   estimates (\code{coefficients}), the random effect estimates
@@ -115,10 +119,10 @@
 #' pred <- predict(m5, newdata = newdata, type = "response", se.fit = TRUE)
 #' cbind(newdata, fit = pred$fit, se = pred$se.fit)
 #'
-#' @importFrom RTMB MakeADFun sdreport ADREPORT REPORT dnorm
+#' @importFrom RTMB MakeADFun sdreport ADREPORT REPORT dnorm dgmrf
 #' @importFrom mgcv gam
 #' @importFrom methods as
-#' @importClassesFrom Matrix TsparseMatrix
+#' @import Matrix
 #' @importFrom stats binomial
 #' @importFrom stats optim
 #' @importFrom stats ave
@@ -126,7 +130,7 @@
 #' @export
 efp <- function(formula, data = NULL, pass = pass, id = id,
   offset = NULL, verbose = FALSE, hessian = TRUE,
-  fit = TRUE, control = list()) {
+  fit = TRUE, control = list(), sparse = TRUE) {
 
   # some checks
   if (is.null(data)) stop("must supply data")
@@ -158,21 +162,60 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
 
   # identify random effects: these are the s(..., bs = "re") terms
   is_re <- vapply(Gsetup$smooth, inherits, TRUE, what = "random.effect")
-  re_labels <- vapply(Gsetup$smooth[is_re], function(x) x$label, "")
   re_cols <- lapply(Gsetup$smooth[is_re], function(x) x$first.para:x$last.para)
-  re_id <- rep(seq_along(re_cols), lengths(re_cols))
   re_cols <- as.integer(unlist(re_cols))
-  fx_cols <- setdiff(seq_len(ncol(G)), re_cols)
+
+  # set up the penalised terms: random effects and penalised smooths. Each
+  # is split into fixed effects, for the part of the term that is not
+  # penalised, and random effects
+  blocks <- smooth_setup(Gsetup, formula, sparse = sparse)
+  pen_cols <- as.integer(unlist(lapply(blocks, function(x) x$cols)))
+  fx_cols <- setdiff(seq_len(ncol(G)), pen_cols)
+  nsigma <- vapply(blocks, function(x) x$npen, 0)
+  re_labels <-
+    unlist(lapply(blocks, function(x) {
+      if (x$npen == 1) x$label else paste0(x$label, seq_len(x$npen))
+    }))
+  if (is.null(re_labels)) re_labels <- character(0)
+
+  # the fixed effects design matrix
+  X <- do.call(cbind, c(list(G[, fx_cols, drop = FALSE]), lapply(blocks, function(x) x$Xf)))
+  Z <- do.call(cbind, c(list(Matrix(0, nrow(G), 0)), lapply(blocks, function(x) x$Zu)))
 
   # remove redundant / collinear parameters (fixed effects only)
-  qr.G <- qr(G[, fx_cols, drop = FALSE])
-  rank.deficient <- fx_cols[qr.G $ pivot[abs(diag(qr.G $ qr)) < 1e-7]]
+  qr.X <- qr(X)
+  rank.deficient <- qr.X $ pivot[abs(diag(qr.X $ qr)) < 1e-7]
   if (length(rank.deficient)) {
-    droppar <- paste(colnames(G)[rank.deficient], collapse = "\n\t")
+    droppar <- paste(colnames(X)[rank.deficient], collapse = "\n\t")
     warning("*** Model has ", length(rank.deficient)," too many parameter(s)!!\n    i will remove the redundant ones:\n\t", droppar, call. = FALSE)
-    fx_cols <- setdiff(fx_cols, rank.deficient)
   }
-  Gfit <- G[, sort(c(fx_cols, re_cols)), drop = FALSE]
+  fx_keep <- setdiff(seq_len(ncol(X)), rank.deficient)
+  fx_cols <- setdiff(fx_cols, fx_cols[rank.deficient[rank.deficient <= length(fx_cols)]])
+
+  # the matrix which converts the model parameters (fixed then random
+  # effects) to the coefficients of the columns of G
+  nfx <- ncol(G) - length(pen_cols)
+  nX <- ncol(X)
+  to_gam <- Matrix(0, ncol(G), nX + ncol(Z), sparse = TRUE)
+  to_gam[cbind(setdiff(seq_len(ncol(G)), pen_cols), seq_len(nfx))] <- 1
+  at_g <- nfx
+  at_u <- nX
+  for (i in seq_along(blocks)) {
+    block <- blocks[[i]]
+    ipar <- c(at_g + seq_len(ncol(block$Xf)), at_u + seq_len(ncol(block$Zu)))
+    to_gam[block$cols, ipar] <- block$TG
+    if (!is.null(block$Tint)) {
+      to_gam[which(colnames(G) == "(Intercept)"), ipar] <- block$Tint
+    }
+    # where the random effects and standard deviations are
+    blocks[[i]]$idx <- at_u - nX + seq_len(ncol(block$Zu))
+    blocks[[i]]$sig <- sum(nsigma[seq_len(i - 1)]) + seq_len(block$npen)
+    at_g <- at_g + ncol(block$Xf)
+    at_u <- at_u + ncol(block$Zu)
+  }
+  to_gam <- to_gam[, c(fx_keep, nX + seq_len(ncol(Z))), drop = FALSE]
+  gam_cols <- which(rowSums(abs(to_gam)) > 0)
+  Gfit <- G[, gam_cols, drop = FALSE]
 
   # get data for likelihood
   ord_output <- order(id, pass)
@@ -182,9 +225,10 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
       y = Gsetup$y,
       offset = offset,
       sample_id = factor(id),
-      X = as(G[, fx_cols, drop = FALSE], "TsparseMatrix"),
-      Z = as(G[, re_cols, drop = FALSE], "TsparseMatrix"),
-      re_id = re_id
+      X = as(as(X[, fx_keep, drop = FALSE], "generalMatrix"), "TsparseMatrix"),
+      Z = as(as(Z, "generalMatrix"), "TsparseMatrix"),
+      re_id = as.integer(unlist(lapply(blocks, function(x) rep(x$sig[1], length(x$idx))))),
+      blocks = lapply(blocks, function(x) x[c("idx", "sig", "S", "logdet")])
     )
 
   if (!fit) {
@@ -198,7 +242,7 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
       log_sigma = rep(0, length(re_labels))
     )
 
-  if (length(re_cols)) {
+  if (length(blocks)) {
     rand <- "alpha"
   } else {
     rand <- NULL
@@ -230,7 +274,7 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   out$rep <- obj$report(par_full)
 
   # extract transformed parameters
-  out$p <- unlist(out$rep$ps)
+  out$p <- unname(unlist(out$rep$ps))
   # Re-order to match input data
   out$p <- out$p[order(ord_output)]
   # probability of capture in each pass, allowing for the fish removed in
@@ -240,7 +284,7 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   )
   
   fx_pars <- grep("beta", names(opt$par))
-  out$sdrep <- sdreport(obj, getJointPrecision = hessian && length(re_cols) > 0)
+  out$sdrep <- sdreport(obj, getJointPrecision = hessian && length(blocks) > 0)
   # keep data for re-fitting
   # efdat needs to be reordered to be compatible with other structures 
   out$data <- data
@@ -254,13 +298,17 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   out$Gfit <- Gfit
   out$fx_cols <- fx_cols
   out$re_cols <- re_cols
+  out$gam_cols <- gam_cols
   out$re_labels <- re_labels
   out$coefficients <- opt$par[fx_pars]
-  names(out$coefficients) <- colnames(G)[fx_cols]
+  names(out$coefficients) <- colnames(X)[fx_keep]
   out$random <- par_full[names(par_full) == "alpha"]
-  names(out$random) <- colnames(G)[re_cols]
+  names(out$random) <- colnames(Z)
   out$sigma <- exp(opt$par[names(opt$par) == "log_sigma"])
   names(out$sigma) <- re_labels
+  # coefficients for the columns of G, used for prediction
+  out$gam_coefficients <- drop(as.matrix(to_gam %*% c(out$coefficients, out$random)))
+  names(out$gam_coefficients) <- colnames(G)
   out$df.null <- nrow(G)
   out$df.residual <- nrow(G) - out$rank
   out$fitted <- out$p
@@ -273,8 +321,8 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
     out$hessian <- NULL
     out$Vb <- NULL
     out$Vp <- NULL
-  } else if (length(re_cols)) {
-    # covariance of fixed and random effects, in the column order of Gfit
+  } else if (length(blocks)) {
+    # covariance of fixed and random effects
     out$hessian <- NULL
     V <- try(as.matrix(solve(out$sdrep$jointPrecision)))
     if (inherits(V, "try-error")) {
@@ -285,8 +333,10 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
       which_a <- which(nms == "alpha")
       out$Vb <- V[which_b, which_b, drop = FALSE]
       rownames(out$Vb) <- colnames(out$Vb) <- names(out$coefficients)
-      keep <- c(which_b, which_a)[order(c(fx_cols, re_cols))]
-      out$Vp <- V[keep, keep, drop = FALSE]
+      # covariance of the coefficients of the columns of Gfit
+      keep <- c(which_b, which_a)
+      to_gam_fit <- to_gam[gam_cols, , drop = FALSE]
+      out$Vp <- as.matrix(to_gam_fit %*% V[keep, keep, drop = FALSE] %*% t(to_gam_fit))
       rownames(out$Vp) <- colnames(out$Vp) <- colnames(Gfit)
     }
   } else {

@@ -13,7 +13,8 @@ efp(
   verbose = FALSE,
   hessian = TRUE,
   fit = TRUE,
-  control = list()
+  control = list(),
+  sparse = TRUE
 )
 }
 \arguments{
@@ -35,6 +36,11 @@ efp(
 \item{fit}{if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned}
 
 \item{control}{a list of control commands to be passed to \code{\link[stats]{optim}}}
+
+\item{sparse}{if TRUE (the default) penalised smooths are set up so that
+sparse bases and penalties stay sparse, see Details. If FALSE the
+constrained basis and penalties from \code{mgcv} are used, which are
+dense. Both give the same model, so this is mainly useful for testing.}
 }
 \value{
 If \code{fit = TRUE}, an object of class \code{efp}, a list which
