@@ -49,9 +49,7 @@ predict(
 
 - ...:
 
-  further arguments passed to
-  [`predict.gam`](https://rdrr.io/pkg/mgcv/man/predict.gam.html) when
-  building the design matrix
+  further arguments, ignored
 
 ## Value
 
@@ -81,11 +79,9 @@ m1 <- efp(count ~ lifestage, data = ef_data, pass = pass, id = sampleID)
 newdata <- data.frame(lifestage = c("Fry", "Parr"))
 predict(m1, newdata = newdata, type = "response", se.fit = TRUE)
 #> $fit
-#>         1         2 
-#> 0.6641846 0.7863670 
+#> [1] 0.6641846 0.7863670
 #> 
 #> $se.fit
-#>          1          2 
-#> 0.01587840 0.01248373 
+#> [1] 0.01587840 0.01248373
 #> 
 ```

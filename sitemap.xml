@@ -1,6 +1,10 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://faskally.github.io/ef/404.html</loc></url>
 <url><loc>https://faskally.github.io/ef/LICENSE-text.html</loc></url>
+<url><loc>https://faskally.github.io/ef/articles/index.html</loc></url>
+<url><loc>https://faskally.github.io/ef/articles/random-effects.html</loc></url>
+<url><loc>https://faskally.github.io/ef/articles/simulating-data.html</loc></url>
+<url><loc>https://faskally.github.io/ef/articles/smooth-terms.html</loc></url>
 <url><loc>https://faskally.github.io/ef/authors.html</loc></url>
 <url><loc>https://faskally.github.io/ef/index.html</loc></url>
 <url><loc>https://faskally.github.io/ef/news/index.html</loc></url>

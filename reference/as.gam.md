@@ -22,6 +22,13 @@ as.gam(object)
 an object of class `gam`, see
 [`gamObject`](https://rdrr.io/pkg/mgcv/man/gamObject.html)
 
+## Details
+
+The conversion fits a model using `mgcv`, which can take a very long
+time if the model has many random effects. Predictions do not need the
+conversion, see
+[`predict.efp`](https://faskally.github.io/ef/reference/predict.efp.md).
+
 ## Examples
 
 ``` r

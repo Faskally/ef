@@ -27,6 +27,8 @@ dataset. Ecological Indicators, 93, 302-315.
 
 Useful links:
 
+- <https://faskally.github.io/ef/>
+
 - <https://github.com/Faskally/ef>
 
 - Report bugs at <https://github.com/Faskally/ef/issues>
