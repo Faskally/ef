@@ -4,7 +4,8 @@
 #' to estimate model parameters
 #'
 #'
-#' @param formula a formula object
+#' @param formula a formula object. Random effects are specified using
+#'   \code{s(f, bs = "re")} terms, where \code{f} is a factor, see Details.
 #' @param data a data.frame containing all relavent info
 #' @param pass a vector of integers giving the pass number of the observation
 #' @param id a vector of integers identifying an observation (a set of electrofishing passes)
@@ -13,9 +14,19 @@
 #' @param init should initialisatiom be random?
 #' @param hessian if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb
 #' @param fit if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned
-#' @param sample_re should sample random effects be included
 #' @param control a list of control commands to be passed to optim
 #' @return glm type object
+#'
+#' @details
+#' Random effects on the logit capture probability are included by adding
+#' \code{s(f, bs = "re")} terms to the formula, where \code{f} is a factor
+#' in \code{data}. For example, \code{s(visitID, bs = "re")} adds between
+#' visit variation and \code{s(sampleID, bs = "re")} adds between sample
+#' variation. Each term has its own standard deviation, and the
+#' random effects are integrated out of the likelihood using the Laplace
+#' approximation, so that \code{logLik} and \code{AIC} are based on the marginal
+#' likelihood. Fitted values are conditional on the estimated random effects.
+#'
 #' @examples
 #' # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
 #' ef_data <- data.frame(n      = c(100, 53, 24, 50, 26, 12,
@@ -68,17 +79,17 @@
 #' out <- cbind(ef_data, p = fitted(m2, type = "p"))
 #' out
 #'
-#' @importFrom TMB MakeADFun sdreport
-#' @importFrom stats nlminb
-#' @importFrom Matrix sparse.model.matrix
+#' @importFrom RTMB MakeADFun sdreport ADREPORT REPORT dnorm
 #' @importFrom mgcv gam
 #' @importFrom methods as
+#' @importClassesFrom Matrix TsparseMatrix
+#' @importFrom stats binomial
 #' @importFrom stats optim
 #'
 #' @export
 efp <- function(formula, data = NULL, pass = pass, id = id,
   offset = NULL, verbose = FALSE, init = "0", hessian = TRUE,
-  fit = TRUE, sample_re = FALSE, control = list()) {
+  fit = TRUE, control = list()) {
 
   # some checks
   if (is.null(data)) stop("must supply data")
@@ -108,43 +119,35 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   colnames(G) <- Gsetup$term.names
   if (nrow(G) != nrow(data)) stop("I think there are NAs in your data, please check and remove them before rerunning.")
 
-  # remove redundant / collinear parameters
-  qr.G <- qr(G)
-  rank.deficient <- qr.G $ pivot[abs(diag(qr.G $ qr)) < 1e-7]
+  # identify random effects: these are the s(..., bs = "re") terms
+  is_re <- vapply(Gsetup$smooth, inherits, TRUE, what = "random.effect")
+  re_labels <- vapply(Gsetup$smooth[is_re], function(x) x$label, "")
+  re_cols <- lapply(Gsetup$smooth[is_re], function(x) x$first.para:x$last.para)
+  re_id <- rep(seq_along(re_cols), lengths(re_cols))
+  re_cols <- as.integer(unlist(re_cols))
+  fx_cols <- setdiff(seq_len(ncol(G)), re_cols)
+
+  # remove redundant / collinear parameters (fixed effects only)
+  qr.G <- qr(G[, fx_cols, drop = FALSE])
+  rank.deficient <- fx_cols[qr.G $ pivot[abs(diag(qr.G $ qr)) < 1e-7]]
   if (length(rank.deficient)) {
     droppar <- paste(colnames(G)[rank.deficient], collapse = "\n\t")
     warning("*** Model has ", length(rank.deficient)," too many parameter(s)!!\n    i will remove the redundant ones:\n\t", droppar, call. = FALSE)
-    Gfit <- G[,-rank.deficient]
-  } else {
-    Gfit <- G
+    fx_cols <- setdiff(fx_cols, rank.deficient)
   }
+  Gfit <- G[, sort(c(fx_cols, re_cols)), drop = FALSE]
 
   # get data for likelihood
   ord_output <- order(id, pass)
-  if (sample_re) {
-    stop("Not coded yet: need to ensure output is in same order as input data")
-    ord <- ord_output
-  } else {
-    ord <- 1:nrow(data)
-  }
-  
-  X <- Gfit[ord, , drop = FALSE]
-  X <- as(X, "dgTMatrix")
-  if (sample_re) {
-    Z <- sparse.model.matrix(~ factor(id[ord]) - 1)
-  } else {
-    Z <- matrix(1, nrow(X), 1)
-  }
-  Z <- as(Z, "dgTMatrix")
 
   efdat <-
     list(
-      y = Gsetup$y[ord],
-      offset = offset[ord],
-      sample_id = factor(id[ord]),
-      X = X,
-      Z = Z,
-      sample_re = as.integer(sample_re)
+      y = Gsetup$y,
+      offset = offset,
+      sample_id = factor(id),
+      X = as(G[, fx_cols, drop = FALSE], "TsparseMatrix"),
+      Z = as(G[, re_cols, drop = FALSE], "TsparseMatrix"),
+      re_id = re_id
     )
 
   if (!fit) {
@@ -155,25 +158,20 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
     list(
       alpha = rep(0, ncol(efdat$Z)),
       beta = rep(0, ncol(efdat$X)),
-      log_sigma = 0
+      log_sigma = rep(0, length(re_labels))
     )
 
-  if (sample_re == 0L) {
-    rand <- NULL
-    map <- list(alpha = factor(NA), log_sigma = factor(NA))
-  } else {
+  if (length(re_cols)) {
     rand <- "alpha"
-    map <- list()
+  } else {
+    rand <- NULL
   }
 
   obj <-
     MakeADFun(
-      efdat,
+      function(params) ef_nll(params, efdat),
       params,
       random = rand,
-      DLL = "ef",
-      map = map,
-      hessian = hessian,
       silent = !verbose
     )
 
@@ -195,43 +193,72 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   
   # set up output object
   out <- list()
-  
+
+  # evaluate at the optimum, this also sets the random effects to their
+  # estimates at the optimum
+  out$llik <- -1 * as.numeric(obj$fn(opt$par))
+  par_full <- obj$env$last.par
+  out$rep <- obj$report(par_full)
+
   # extract transformed parameters
-  out$p <- unlist(obj$report()$ps)
+  out$p <- unlist(out$rep$ps)
   # Re-order to match input data
   out$p <- out$p[order(ord_output)]
   
   fx_pars <- grep("beta", names(opt$par))
-  out$sdrep <- sdreport(obj)
-  out$rep <- obj$report()
+  out$sdrep <- sdreport(obj, getJointPrecision = hessian && length(re_cols) > 0)
   # keep data for re-fitting
   # efdat needs to be reordered to be compatible with other structures 
   out$data <- data
   out$formula <- formula # for printing and summary
-  out$llik <- -1 * obj$fn(opt$par)
   out$terms <- Gsetup$terms
   out$call <- match.call()
-  out$aic <- -2 * out$llik + 2*ncol(Gfit)
+  out$rank <- length(opt$par)
+  out$aic <- -2 * out$llik + 2 * out$rank
   out$G <- G
   out$Gfit <- Gfit
+  out$fx_cols <- fx_cols
+  out$re_cols <- re_cols
+  out$re_labels <- re_labels
   out$coefficients <- opt$par[fx_pars]
-  names(out$coefficients) <- colnames(Gfit)
+  names(out$coefficients) <- colnames(G)[fx_cols]
+  out$random <- par_full[names(par_full) == "alpha"]
+  names(out$random) <- colnames(G)[re_cols]
+  out$sigma <- exp(opt$par[names(opt$par) == "log_sigma"])
+  names(out$sigma) <- re_labels
   out$df.null <- nrow(G)
-  out$df.residual <- nrow(G) - ncol(Gfit)
-  out$rank <- ncol(Gfit)
+  out$df.residual <- nrow(G) - out$rank
   out$fitted <- out$p
 
   out$residuals <- rep(0, nrow(data))
   out$null.deviance <- NA
   out$deviance <- NA
   out$family <- binomial()
-  if (sample_re | !hessian) {
+  if (!hessian) {
     out$hessian <- NULL
     out$Vb <- NULL
+    out$Vp <- NULL
+  } else if (length(re_cols)) {
+    # covariance of fixed and random effects, in the column order of Gfit
+    out$hessian <- NULL
+    V <- try(as.matrix(solve(out$sdrep$jointPrecision)))
+    if (inherits(V, "try-error")) {
+      out$Vb <- out$Vp <- V
+    } else {
+      nms <- rownames(out$sdrep$jointPrecision)
+      which_b <- which(nms == "beta")
+      which_a <- which(nms == "alpha")
+      out$Vb <- V[which_b, which_b, drop = FALSE]
+      rownames(out$Vb) <- colnames(out$Vb) <- names(out$coefficients)
+      keep <- c(which_b, which_a)[order(c(fx_cols, re_cols))]
+      out$Vp <- V[keep, keep, drop = FALSE]
+      rownames(out$Vp) <- colnames(out$Vp) <- colnames(Gfit)
+    }
   } else {
     out$hessian <- obj$he(opt$par)[fx_pars, fx_pars, drop = FALSE]
     rownames(out$hessian) <- colnames(out$hessian) <- colnames(Gfit)
     out$Vb <- try(solve(out$hessian))
+    out$Vp <- out$Vb
   }
 
   out$Gsetup <- Gsetup

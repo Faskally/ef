@@ -8,12 +8,15 @@ print.efp <- function(x, digits = max(3L, getOption("digits") - 3L),  ...) {
   )
 
   cat("Formula:\n")
-  print(formula(x))
+  print(x$formula)
   cat("\n")
 
   if (!is.null(x$sdrep$par.random)) {
     cat("Random effects:\n")
-    print(summary(x$sdrep, "report", p.value = FALSE), digits = digits, ...)
+    re <- summary(x$sdrep, "report", p.value = FALSE)
+    re <- re[rownames(re) == "sigma", , drop = FALSE]
+    rownames(re) <- paste("sigma", x$re_labels)
+    print(re, digits = digits, ...)
     cat("\n")
   }
   else {

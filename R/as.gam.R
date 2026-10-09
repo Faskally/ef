@@ -16,13 +16,8 @@ as.gam <- function(object) {
   # make a gam container from the originoal setup
   g1 <- gam(G = object $ Gsetup)
 
-  # recheck for rank deficiency
-  qr.G <- qr(object$G)
-  rank.deficient <- qr.G$pivot[abs(diag(qr.G$qr)) < 1e-7]
-  whichkeep <- -rank.deficient
-  if (!length(whichkeep)) {
-    whichkeep <- 1:length(object$ coefficients)
-  }
+  # columns of the design matrix that were estimated
+  whichkeep <- sort(c(object$fx_cols, object$re_cols))
   redudant <- names(g1$coefficients[-1 * whichkeep])
   if (length(redudant)) {
     warning(
@@ -33,12 +28,13 @@ as.gam <- function(object) {
 
   # assign coefficients to gam container
   g1$coefficients[] <- 0
-  g1$coefficients[whichkeep] <- object $ coefficients
+  g1$coefficients[object$fx_cols] <- object $ coefficients
+  g1$coefficients[object$re_cols] <- object $ random
 
   # assign variance matrix to gam container
   g1$Vp[] <- 0
   diag(g1$Vp[]) <- 1e-5
-  g1$Vp[whichkeep, whichkeep] <- object$Vb
+  g1$Vp[whichkeep, whichkeep] <- object$Vp
 
   # assign binomial family to gam container
   g1$family <- binomial()

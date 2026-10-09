@@ -38,8 +38,8 @@ ef_data$sampleID <-
   )
 ```
 
-Create a visitID for unique site visits. This is required by the
-overdispersion function (see below).
+Create a visitID for unique site visits. This is used to include between
+visit variation as a random effect (see below).
 
 ``` r
 ef_data$visitID <- factor(paste(ef_data$date, ef_data$siteID))
@@ -180,77 +180,90 @@ Plot to check
 
 # Comparing Models
 
-Because electrofishing count data are typically overdispersed and
-because the modelling framework cannot incorpororate random effects, it
-it necessary to estimate the amount of overdispersion in the data and to
-account for this when comparing models.
+Electrofishing count data are typically overdispersed: capture
+probability varies between visits to a site, and between samples within
+a visit, by more than the covariates can explain. This variation is
+included in the model using random effects, which are specified by
+adding `s(f, bs = "re")` terms to the formula, where `f` is a factor.
 
-Overdispersion is estimated by fitting a large model that captures most
-of the systematic variation in the data and comparing this to a
-visit-wise and saturated model (see [Millar *et al*.,
-2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017)):
+The sampleID needs to be a factor to be used as a random effect
 
 ``` r
-large_model <- efp(count ~ fyear + pass12 + lifestage,
-                   data = ef_data, pass = pass, id = sampleID)
+ef_data$fsampleID <- factor(ef_data$sampleID)
 ```
 
-Use the overdispersion function in the ef package and specify the data,
-visit ID, site ID, sample ID and the large model.
+Fit a model with visit and sample random effects
 
 ``` r
-od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
-                              sampleID = "sampleID",
-                              control = list(maxit = 100),
-                              largemodel = large_model)
+mfull <- efp(count ~ siteID + year + lifestage + pass12 +
+               s(visitID, bs = "re") + s(fsampleID, bs = "re"),
+             data = ef_data, pass = pass, id = sampleID)
+
+mfull
 ```
 
-    ## Saturated model start time 2023-10-10 17:02:30.602148
+    ## 
+    ## Call:
+    ## efp(formula = count ~ siteID + year + lifestage + pass12 + s(visitID, 
+    ##     bs = "re") + s(fsampleID, bs = "re"), data = ef_data, pass = pass, 
+    ##     id = sampleID)
+    ## 
+    ## Formula:
+    ## count ~ siteID + year + lifestage + pass12 + s(visitID, bs = "re") + 
+    ##     s(fsampleID, bs = "re")
+    ## 
+    ## Random effects:
+    ##                    Estimate Std. Error
+    ## sigma s(visitID)    0.01161    0.06545
+    ## sigma s(fsampleID)  0.07751    0.16450
+    ## 
+    ## Coefficients:
+    ##                Estimate Std. Error  z value Pr(>|z^2|)
+    ## (Intercept)    0.648112     0.1778  3.64471  2.677e-04
+    ## siteIDSite2    0.079936     0.1421  0.56244  5.738e-01
+    ## siteIDSite3   -0.016579     0.1556 -0.10658  9.151e-01
+    ## year2012      -0.208267     0.1798 -1.15807  2.468e-01
+    ## year2013       0.042128     0.1931  0.21814  8.273e-01
+    ## year2014       0.361853     0.1899  1.90504  5.678e-02
+    ## year2015      -0.003164     0.2172 -0.01457  9.884e-01
+    ## lifestageParr  0.588162     0.1253  4.69505  2.665e-06
+    ## pass122       -0.236059     0.1318 -1.79112  7.327e-02
+    ## 
+    ## Degrees of Freedom: 90 Total (i.e. Null);  79 Residual
+    ## AIC: 3192
 
-    ## Saturated model duration = 0 secs
-
-    ## Site visit model start time 2023-10-10 17:02:30.800149
-
-    ## Site visit model duration = 0 secs
-
-View overdispersion estimate. The ‘disp’ column contains the estimates
-of within and between sample overdispersion. The largest of these values
-is used to adjust the BIC.
+The estimated standard deviations of the visit and sample random effects
+(on the logit scale) are
 
 ``` r
-od_estimate
+mfull$sigma
 ```
 
-    ##                llik nparam deviance df      disp          p
-    ## saturated -1552.715     60       NA NA        NA         NA
-    ## sitevisit -1579.952     22 54.47317 38 1.4335045 0.04057796
-    ## large     -1585.472      7 11.04111 15 0.7360738 0.74967497
+    ##   s(visitID) s(fsampleID) 
+    ##   0.01161307   0.07751480
 
-Compare models using the adjusted BIC function (Equation 4, [Millar *et
-al*.,
-2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017))
+Because the random effects are part of the likelihood, models can be
+compared directly using AIC
 
 - Full model
 
 ``` r
-mfull <- efp(count ~ siteID + year + lifestage + pass12,
-             data = ef_data, pass = pass, id = sampleID)
-
-BICadj(mfull, od_estimate)
+AIC(mfull)
 ```
 
-    ## [1] 2235.949
+    ## [1] 3192.268
 
 - Model without lifestage
 
 ``` r
-mlife <- efp(count ~ siteID + year + pass12,
+mlife <- efp(count ~ siteID + year + pass12 +
+               s(visitID, bs = "re") + s(fsampleID, bs = "re"),
              data = ef_data, pass = pass, id = sampleID)
 
-BICadj(mlife, od_estimate)
+AIC(mlife)
 ```
 
-    ## [1] 2250.261
+    ## [1] 3206.624
 
 ## contributing
 

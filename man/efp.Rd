@@ -14,12 +14,12 @@ efp(
   init = "0",
   hessian = TRUE,
   fit = TRUE,
-  sample_re = FALSE,
   control = list()
 )
 }
 \arguments{
-\item{formula}{a formula object}
+\item{formula}{a formula object. Random effects are specified using
+\code{s(f, bs = "re")} terms, where \code{f} is a factor, see Details.}
 
 \item{data}{a data.frame containing all relavent info}
 
@@ -37,8 +37,6 @@ efp(
 
 \item{fit}{if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned}
 
-\item{sample_re}{should sample random effects be included}
-
 \item{control}{a list of control commands to be passed to optim}
 }
 \value{
@@ -47,6 +45,16 @@ glm type object
 \description{
 This function uses the marginal likelihood of capture probabilities
 to estimate model parameters
+}
+\details{
+Random effects on the logit capture probability are included by adding
+\code{s(f, bs = "re")} terms to the formula, where \code{f} is a factor
+in \code{data}. For example, \code{s(visitID, bs = "re")} adds between
+visit variation and \code{s(sampleID, bs = "re")} adds between sample
+variation. Each term has its own standard deviation, and the
+random effects are integrated out of the likelihood using the Laplace
+approximation, so that \code{logLik} and \code{AIC} are based on the marginal
+likelihood. Fitted values are conditional on the estimated random effects.
 }
 \examples{
 # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
