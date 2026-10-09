@@ -119,20 +119,19 @@ m2 <- efp(n ~ 1 + factor(stage) + factor(replace(pass, pass> 2, 2)),
 out <- cbind(ef_data, p = fitted(m2, type = "p"))
 out
 
-# a smooth effect of a continuous covariate. Smooths are unpenalised, so
+# a smooth effect of a continuous covariate, day of the year. Smooths are unpenalised, so
 # the flexibility is set by k
 data(ef_data)
 ef_data$sampleID <- factor(paste(ef_data$date, ef_data$siteID,
                                  ef_data$lifestage, ef_data$species))
 ef_data$pass12 <- factor(replace(ef_data$pass, ef_data$pass > 2, 2))
-ef_data$nyear <- as.numeric(as.character(ef_data$year))
-m5 <- efp(count ~ siteID + pass12 + lifestage + s(nyear, k = 3),
+m5 <- efp(count ~ siteID + pass12 + lifestage + s(doy, k = 3),
           data = ef_data, pass = pass, id = sampleID)
 m5
 
 # predicted capture probability over the smooth, with standard errors
 newdata <- data.frame(siteID = "Site1", pass12 = "1", lifestage = "Fry",
-                      nyear = seq(2011, 2015, by = 0.5))
+                      doy = seq(195, 215, by = 5))
 pred <- predict(m5, newdata = newdata, type = "response", se.fit = TRUE)
 cbind(newdata, fit = pred$fit, se = pred$se.fit)
 

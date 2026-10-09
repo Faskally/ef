@@ -9,6 +9,8 @@
 * add a `predict()` method for `efp` fits, with predictions for new data,
   standard errors and the option to exclude random effects
 * `fitted(type = "pi")` now returns the probability of capture in each pass
+* add day of the year (`doy`) to the `ef_data` example dataset, a continuous
+  covariate which can be used to fit smooth terms
 * add examples of smooth terms to the help and the README (#1)
 * add `summary()`, `vcov()`, `confint()`, `logLik()` and `formula()` methods
   for `efp` fits. `residuals()`, `anova()` and `plot()` now give an

@@ -22,8 +22,7 @@ unpenalised.
 data(ef_data)
 ef_data$sampleID <- factor(paste(ef_data$date, ef_data$siteID,
                                  ef_data$lifestage, ef_data$species))
-ef_data$nyear <- as.numeric(as.character(ef_data$year))
-m1 <- efp(count ~ lifestage + s(nyear, k = 3),
+m1 <- efp(count ~ lifestage + s(doy, k = 3),
           data = ef_data, pass = pass, id = sampleID)
 
 m1_gam <- as.gam(m1)

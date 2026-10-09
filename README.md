@@ -136,62 +136,63 @@ Continuous covariates can be included as smooth terms using `s()`. The
 smooths are unpenalised regression splines, no smoothing parameters are
 estimated, so the flexibility of a smooth is set by its basis dimension
 `k`, which should be kept small. Here the year factor is replaced by a
-smooth trend with 2 degrees of freedom (`k = 3`).
+smooth effect of the day of the year (`doy`) with 2 degrees of freedom
+(`k = 3`).
 
 ``` r
-ef_data$nyear <- as.numeric(as.character(ef_data$year))
-
 m1_smooth <-
   efp(
-    count ~ siteID + s(nyear, k = 3) + pass12 + lifestage,
+    count ~ siteID + s(doy, k = 3) + pass12 + lifestage,
     data = ef_data, pass = pass, id = sampleID
   )
 ```
 
     ## 
     ## Call:
-    ## efp(formula = count ~ siteID + s(nyear, k = 3) + pass12 + lifestage, 
+    ## efp(formula = count ~ siteID + s(doy, k = 3) + pass12 + lifestage, 
     ##     data = ef_data, pass = pass, id = sampleID)
     ## 
     ## Formula:
-    ## count ~ siteID + s(nyear, k = 3) + pass12 + lifestage
+    ## count ~ siteID + s(doy, k = 3) + pass12 + lifestage
     ## 
     ## No random effects
     ## 
     ## Coefficients:
-    ##               Estimate Std. Error z value Pr(>|z^2|)
-    ## (Intercept)    0.67060    0.11685  5.7392  9.514e-09
-    ## siteIDSite2    0.08768    0.13409  0.6539  5.132e-01
-    ## siteIDSite3   -0.02642    0.14629 -0.1806  8.567e-01
-    ## pass122       -0.25099    0.13093 -1.9169  5.525e-02
-    ## lifestageParr  0.60401    0.11247  5.3703  7.862e-08
-    ## s(nyear).1     0.04792    0.23691  0.2023  8.397e-01
-    ## s(nyear).2     0.12494    0.06299  1.9836  4.730e-02
+    ##                 Estimate Std. Error   z value Pr(>|z^2|)
+    ## (Intercept)    0.7285785    0.12931  5.634345  1.757e-08
+    ## siteIDSite2   -0.0003248    0.14606 -0.002224  9.982e-01
+    ## siteIDSite3   -0.1597720    0.16543 -0.965815  3.341e-01
+    ## pass122       -0.2543622    0.13085 -1.943889  5.191e-02
+    ## lifestageParr  0.6109669    0.11672  5.234495  1.654e-07
+    ## s(doy).1       0.0304943    0.27119  0.112446  9.105e-01
+    ## s(doy).2      -0.1036990    0.07735 -1.340576  1.801e-01
     ## 
     ## Degrees of Freedom: 90 Total (i.e. Null);  83 Residual
-    ## AIC: 3194
+    ## AIC: 3196
 
-The smooth trend in capture probability, here for the first pass for fry
-at Site1, with approximate 95% confidence intervals
+The smooth effect of day of the year on capture probability, here for
+the first pass for fry at Site1, with approximate 95% confidence
+intervals. The rug shows the days on which the sites were fished.
 
 ``` r
 newdata <-
   data.frame(
     siteID = "Site1", pass12 = "1", lifestage = "Fry",
-    nyear = seq(2011, 2015, by = 0.1)
+    doy = seq(min(ef_data$doy), max(ef_data$doy), length = 50)
   )
 pred <- predict(m1_smooth, newdata = newdata, se.fit = TRUE)
 
-plot(newdata$nyear, invlogit(pred$fit), type = "l", ylim = c(0, 1),
-     xlab = "Year", ylab = "Capture probability")
-lines(newdata$nyear, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
-lines(newdata$nyear, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
+plot(newdata$doy, invlogit(pred$fit), type = "l", ylim = c(0, 1),
+     xlab = "Day of year", ylab = "Capture probability")
+lines(newdata$doy, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
+lines(newdata$doy, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
+rug(ef_data$doy)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](README_files/figure-gfm/smooth-doy-1.png)<!-- -->
 
-The models with a year factor and a smooth trend in year can be compared
-using AIC
+The models with a year factor and a smooth effect of day of the year can
+be compared using AIC
 
 ``` r
 AIC(m1, m1_smooth)
@@ -199,7 +200,7 @@ AIC(m1, m1_smooth)
 
     ##           df      AIC
     ## m1         9 3188.305
-    ## m1_smooth  7 3193.565
+    ## m1_smooth  7 3195.511
 
 # Get Predicted Values for *P*
 
@@ -280,7 +281,7 @@ densdata $ offset <- log(densdata $ area * densdata $ prob)
 
 Plot to check
 
-![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](README_files/figure-gfm/density-1.png)<!-- -->
 
 # Comparing Models
 

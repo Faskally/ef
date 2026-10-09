@@ -99,14 +99,12 @@ m1
 # Smooth Terms
 
 
-Continuous covariates can be included as smooth terms using `s()`. The smooths are unpenalised regression splines, no smoothing parameters are estimated, so the flexibility of a smooth is set by its basis dimension `k`, which should be kept small. Here the year factor is replaced by a smooth trend with 2 degrees of freedom (`k = 3`).
+Continuous covariates can be included as smooth terms using `s()`. The smooths are unpenalised regression splines, no smoothing parameters are estimated, so the flexibility of a smooth is set by its basis dimension `k`, which should be kept small. Here the year factor is replaced by a smooth effect of the day of the year (`doy`) with 2 degrees of freedom (`k = 3`).
 
 ```{r results = 'hide', warning = FALSE, message = FALSE}
-ef_data$nyear <- as.numeric(as.character(ef_data$year))
-
 m1_smooth <-
   efp(
-    count ~ siteID + s(nyear, k = 3) + pass12 + lifestage,
+    count ~ siteID + s(doy, k = 3) + pass12 + lifestage,
     data = ef_data, pass = pass, id = sampleID
   )
 ```
@@ -114,23 +112,24 @@ m1_smooth <-
 m1_smooth
 ```
 
-The smooth trend in capture probability, here for the first pass for fry at Site1, with approximate 95% confidence intervals
+The smooth effect of day of the year on capture probability, here for the first pass for fry at Site1, with approximate 95% confidence intervals. The rug shows the days on which the sites were fished.
 
-```{r fig.width = 6, fig.height = 4.5}
+```{r smooth-doy, fig.width = 6, fig.height = 4.5}
 newdata <-
   data.frame(
     siteID = "Site1", pass12 = "1", lifestage = "Fry",
-    nyear = seq(2011, 2015, by = 0.1)
+    doy = seq(min(ef_data$doy), max(ef_data$doy), length = 50)
   )
 pred <- predict(m1_smooth, newdata = newdata, se.fit = TRUE)
 
-plot(newdata$nyear, invlogit(pred$fit), type = "l", ylim = c(0, 1),
-     xlab = "Year", ylab = "Capture probability")
-lines(newdata$nyear, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
-lines(newdata$nyear, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
+plot(newdata$doy, invlogit(pred$fit), type = "l", ylim = c(0, 1),
+     xlab = "Day of year", ylab = "Capture probability")
+lines(newdata$doy, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
+lines(newdata$doy, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
+rug(ef_data$doy)
 ```
 
-The models with a year factor and a smooth trend in year can be compared using AIC
+The models with a year factor and a smooth effect of day of the year can be compared using AIC
 
 ```{r}
 AIC(m1, m1_smooth)
@@ -213,7 +212,7 @@ densdata $ offset <- log(densdata $ area * densdata $ prob)
 
 Plot to check
 
-```{r echo = F, fig.width = 6, fig.height = 4.5}
+```{r density, echo = F, fig.width = 6, fig.height = 4.5}
 densdata <- densdata[order(densdata $ year), ]
 
 xyplot(Density_Estimate ~ fyear | lifestage, data = densdata, groups = siteID,

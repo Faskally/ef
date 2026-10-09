@@ -301,19 +301,17 @@ test_that("smooth terms", {
       ef_data$date, ef_data$siteID,
       ef_data$lifestage, ef_data$species
     ))
-  ef_data$nyear <- as.numeric(as.character(ef_data$year))
-
   m0 <- efp(count ~ lifestage,
     data = ef_data, pass = pass, id = sampleID
   )
-  m1 <- efp(count ~ lifestage + s(nyear, k = 3),
+  m1 <- efp(count ~ lifestage + s(doy, k = 3),
     data = ef_data, pass = pass, id = sampleID
   )
 
   expect_equal(m1$convergence, 0)
   expect_equal(
     names(coef(m1)),
-    c("(Intercept)", "lifestageParr", "s(nyear).1", "s(nyear).2")
+    c("(Intercept)", "lifestageParr", "s(doy).1", "s(doy).2")
   )
   expect_gte(as.numeric(logLik(m1)), as.numeric(logLik(m0)) - 1e-6)
 
@@ -328,8 +326,8 @@ test_that("smooth terms", {
     fitted(m1)
   )
 
-  # prediction between the observed years
-  newdata <- data.frame(lifestage = "Fry", nyear = c(2011.5, 2013, 2014.5))
+  # prediction over the range of the covariate
+  newdata <- data.frame(lifestage = "Fry", doy = c(195, 205, 215))
   pred <- predict(m1, newdata = newdata, type = "response", se.fit = TRUE)
   expect_true(all(pred$fit > 0 & pred$fit < 1))
   expect_true(all(pred$se.fit > 0))
