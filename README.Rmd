@@ -8,9 +8,32 @@ output:
 
 [![Build Status](https://travis-ci.org/Faskally/ef.svg?branch=tmb)](https://travis-ci.org/Faskally/ef)
 
+## the model
+
+For a sample $s$ (a unique combination of site visit, species and lifestage) fished with $n_s$ passes, let $y_{si}$ be the number of fish caught on pass $i$ and $p_{si}$ the capture probability on that pass. The probability that a fish is first caught on pass $i$ is
+
+$$\pi_{si} = p_{si} \prod_{j < i} (1 - p_{sj})$$
+
+Conditional on the total catch, $T_s = \sum_i y_{si}$, the counts are multinomial with probabilities $\pi_{si} / P_s$, where $P_s = \sum_i \pi_{si}$ is the cumulative capture probability. This gives the log likelihood
+
+$$\ell = \sum_s \left( \sum_i y_{si} \log \pi_{si} - T_s \log P_s \right)$$
+
+which does not depend on the unknown number of fish at the site. Capture probability is modelled on the logit scale
+
+$$\text{logit}(p_{si}) = \mathbf{x}_{si}^\top \boldsymbol{\beta} + \mathbf{z}_{si}^\top \mathbf{b}, \qquad b_k \sim N(0, \sigma_{g(k)}^2)$$
+
+where $\boldsymbol{\beta}$ are fixed effects and $\mathbf{b}$ are optional random effects, for example for visit and sample, with one standard deviation $\sigma_g$ for each random effect term. The random effects are integrated out of the likelihood using the Laplace approximation, and the fixed effects and standard deviations are estimated by maximum likelihood using [RTMB](https://cran.r-project.org/package=RTMB).
+
+Fish density is then estimated by dividing the total catch by the area fished and the cumulative capture probability: $T_s / (A_s P_s)$.
+
 ## installation
 
-To install the latest version `ef` package run
+To install the `ef` package from r-universe run
+```r
+install.packages("ef", repos = c('https://faskally.r-universe.dev', 'https://cloud.r-project.org'))
+```
+
+or to install the latest development version from GitHub run
 ```r
 remotes::install_github("faskally/ef")
 ```
