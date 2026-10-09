@@ -13,8 +13,7 @@
 #' @export
 as.gam <- function(object) {
   stopifnot(is(object)[1] == "efp")
-  # make a gam container from the originoal setup
-  g1 <- gam(G = object $ Gsetup)
+  g1 <- efp_gam(object)
 
   # columns of the design matrix that were estimated
   whichkeep <- sort(c(object$fx_cols, object$re_cols))
@@ -26,6 +25,18 @@ as.gam <- function(object) {
     )
   }
 
+  message("Note that, although predictions and plots will be correct\n smoothing parameter estimates are all wrong as no smoothing took place!")
+  g1
+}
+
+# gam container holding the efp estimates, used for prediction and plotting
+efp_gam <- function(object) {
+  # make a gam container from the originoal setup
+  g1 <- gam(G = object $ Gsetup)
+
+  # columns of the design matrix that were estimated
+  whichkeep <- sort(c(object$fx_cols, object$re_cols))
+
   # assign coefficients to gam container
   g1$coefficients[] <- 0
   g1$coefficients[object$fx_cols] <- object $ coefficients
@@ -34,11 +45,12 @@ as.gam <- function(object) {
   # assign variance matrix to gam container
   g1$Vp[] <- 0
   diag(g1$Vp[]) <- 1e-5
-  g1$Vp[whichkeep, whichkeep] <- object$Vp
+  if (is.matrix(object$Vp)) {
+    g1$Vp[whichkeep, whichkeep] <- object$Vp
+  }
 
   # assign binomial family to gam container
   g1$family <- binomial()
 
-  message("Note that, although predictions and plots will be correct\n smoothing parameter estimates are all wrong as no smoothing took place!")
   g1
 }

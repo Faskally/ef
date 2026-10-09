@@ -96,20 +96,57 @@ m1
 ```
 
 
-# Get Predicted Values for _P_
+# Smooth Terms
 
 
-The model needs to be reformatted to allow predictions (i.e. obtain _P_) capture probabilities, uses as.gam function.
+Continuous covariates can be included as smooth terms using `s()`. The smooths are unpenalised regression splines, no smoothing parameters are estimated, so the flexibility of a smooth is set by its basis dimension `k`, which should be kept small. Here the year factor is replaced by a smooth trend with 2 degrees of freedom (`k = 3`).
 
 ```{r results = 'hide', warning = FALSE, message = FALSE}
-m1_gam <- as.gam(m1)
+ef_data$nyear <- as.numeric(as.character(ef_data$year))
+
+m1_smooth <-
+  efp(
+    count ~ siteID + s(nyear, k = 3) + pass12 + lifestage,
+    data = ef_data, pass = pass, id = sampleID
+  )
 ```
+```{r echo = FALSE}
+m1_smooth
+```
+
+The smooth trend in capture probability, here for the first pass for fry at Site1, with approximate 95% confidence intervals
+
+```{r fig.width = 6, fig.height = 4.5}
+newdata <-
+  data.frame(
+    siteID = "Site1", pass12 = "1", lifestage = "Fry",
+    nyear = seq(2011, 2015, by = 0.1)
+  )
+pred <- predict(m1_smooth, newdata = newdata, se.fit = TRUE)
+
+plot(newdata$nyear, invlogit(pred$fit), type = "l", ylim = c(0, 1),
+     xlab = "Year", ylab = "Capture probability")
+lines(newdata$nyear, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
+lines(newdata$nyear, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
+```
+
+The models with a year factor and a smooth trend in year can be compared using AIC
+
+```{r}
+AIC(m1, m1_smooth)
+```
+
+
+# Get Predicted Values for _P_
+
 
 Predict _P_ from the model to the full dataset. Note, if all the data is multi-pass then can just use fitted values. However, if you want P for both single and multi-pass data then predict to the new dataframe
 
 ```{r}
-ef_data$prob <- predict.gam(m1_gam, newdata=ef_data, type = "response")
+ef_data$prob <- predict(m1, newdata = ef_data, type = "response")
 ```
+
+Standard errors of the predictions are available using `se.fit = TRUE`. To use the plotting and prediction tools in `mgcv` the model can also be converted to a gam object using `as.gam(m1)`.
 
 
 # Obtain Cumulative Estimates of _P_ (for estimation of densities later)

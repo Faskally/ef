@@ -7,21 +7,35 @@ Status](https://travis-ci.org/Faskally/ef.svg?branch=tmb)](https://travis-ci.org
 
 ## the model
 
-For a sample $s$ (a unique combination of site visit, species and lifestage) fished with $n_s$ passes, let $y_{si}$ be the number of fish caught on pass $i$ and $p_{si}$ the capture probability on that pass. The probability that a fish is first caught on pass $i$ is
+For a sample $s$ (a unique combination of site visit, species and
+lifestage) fished with $n_s$ passes, let $y_{si}$ be the number of fish
+caught on pass $i$ and $p_{si}$ the capture probability on that pass.
+The probability that a fish is first caught on pass $i$ is
 
 $$\pi_{si} = p_{si} \prod_{j < i} (1 - p_{sj})$$
 
-Conditional on the total catch, $T_s = \sum_i y_{si}$, the counts are multinomial with probabilities $\pi_{si} / P_s$, where $P_s = \sum_i \pi_{si}$ is the cumulative capture probability. This gives the log likelihood
+Conditional on the total catch, $T_s = \sum_i y_{si}$, the counts are
+multinomial with probabilities $\pi_{si} / P_s$, where
+$P_s = \sum_i \pi_{si}$ is the cumulative capture probability. This
+gives the log likelihood
 
 $$\ell = \sum_s \left( \sum_i y_{si} \log \pi_{si} - T_s \log P_s \right)$$
 
-which does not depend on the unknown number of fish at the site. Capture probability is modelled on the logit scale
+which does not depend on the unknown number of fish at the site. Capture
+probability is modelled on the logit scale
 
 $$\text{logit}(p_{si}) = \mathbf{x}_{si}^\top \boldsymbol{\beta} + \mathbf{z}_{si}^\top \mathbf{b}, \qquad b_k \sim N(0, \sigma_{g(k)}^2)$$
 
-where $\boldsymbol{\beta}$ are fixed effects and $\mathbf{b}$ are optional random effects, for example for visit and sample, with one standard deviation $\sigma_g$ for each random effect term. The random effects are integrated out of the likelihood using the Laplace approximation, and the fixed effects and standard deviations are estimated by maximum likelihood using [RTMB](https://cran.r-project.org/package=RTMB).
+where $\boldsymbol{\beta}$ are fixed effects and $\mathbf{b}$ are
+optional random effects, for example for visit and sample, with one
+standard deviation $\sigma_g$ for each random effect term. The random
+effects are integrated out of the likelihood using the Laplace
+approximation, and the fixed effects and standard deviations are
+estimated by maximum likelihood using
+[RTMB](https://cran.r-project.org/package=RTMB).
 
-Fish density is then estimated by dividing the total catch by the area fished and the cumulative capture probability: $T_s / (A_s P_s)$.
+Fish density is then estimated by dividing the total catch by the area
+fished and the cumulative capture probability: $T_s / (A_s P_s)$.
 
 ## installation
 
@@ -118,22 +132,90 @@ m1 <-
     ## Degrees of Freedom: 90 Total (i.e. Null);  81 Residual
     ## AIC: 3188
 
-# Get Predicted Values for *P*
+# Smooth Terms
 
-The model needs to be reformatted to allow predictions (i.e. obtain *P*)
-capture probabilities, uses as.gam function.
+Continuous covariates can be included as smooth terms using `s()`. The
+smooths are unpenalised regression splines, no smoothing parameters are
+estimated, so the flexibility of a smooth is set by its basis dimension
+`k`, which should be kept small. Here the year factor is replaced by a
+smooth trend with 2 degrees of freedom (`k = 3`).
 
 ``` r
-m1_gam <- as.gam(m1)
+ef_data$nyear <- as.numeric(as.character(ef_data$year))
+
+m1_smooth <-
+  efp(
+    count ~ siteID + s(nyear, k = 3) + pass12 + lifestage,
+    data = ef_data, pass = pass, id = sampleID
+  )
 ```
+
+    ## 
+    ## Call:
+    ## efp(formula = count ~ siteID + s(nyear, k = 3) + pass12 + lifestage, 
+    ##     data = ef_data, pass = pass, id = sampleID)
+    ## 
+    ## Formula:
+    ## count ~ siteID + s(nyear, k = 3) + pass12 + lifestage
+    ## 
+    ## No random effects
+    ## 
+    ## Coefficients:
+    ##               Estimate Std. Error z value Pr(>|z^2|)
+    ## (Intercept)    0.67060    0.11685  5.7392  9.514e-09
+    ## siteIDSite2    0.08768    0.13409  0.6539  5.132e-01
+    ## siteIDSite3   -0.02642    0.14629 -0.1806  8.567e-01
+    ## pass122       -0.25099    0.13093 -1.9169  5.525e-02
+    ## lifestageParr  0.60401    0.11247  5.3703  7.862e-08
+    ## s(nyear).1     0.04792    0.23691  0.2023  8.397e-01
+    ## s(nyear).2     0.12494    0.06299  1.9836  4.730e-02
+    ## 
+    ## Degrees of Freedom: 90 Total (i.e. Null);  83 Residual
+    ## AIC: 3194
+
+The smooth trend in capture probability, here for the first pass for fry
+at Site1, with approximate 95% confidence intervals
+
+``` r
+newdata <-
+  data.frame(
+    siteID = "Site1", pass12 = "1", lifestage = "Fry",
+    nyear = seq(2011, 2015, by = 0.1)
+  )
+pred <- predict(m1_smooth, newdata = newdata, se.fit = TRUE)
+
+plot(newdata$nyear, invlogit(pred$fit), type = "l", ylim = c(0, 1),
+     xlab = "Year", ylab = "Capture probability")
+lines(newdata$nyear, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
+lines(newdata$nyear, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+The models with a year factor and a smooth trend in year can be compared
+using AIC
+
+``` r
+AIC(m1, m1_smooth)
+```
+
+    ##           df      AIC
+    ## m1         9 3188.305
+    ## m1_smooth  7 3193.565
+
+# Get Predicted Values for *P*
 
 Predict *P* from the model to the full dataset. Note, if all the data is
 multi-pass then can just use fitted values. However, if you want P for
 both single and multi-pass data then predict to the new dataframe
 
 ``` r
-ef_data$prob <- predict.gam(m1_gam, newdata=ef_data, type = "response")
+ef_data$prob <- predict(m1, newdata = ef_data, type = "response")
 ```
+
+Standard errors of the predictions are available using `se.fit = TRUE`.
+To use the plotting and prediction tools in `mgcv` the model can also be
+converted to a gam object using `as.gam(m1)`.
 
 # Obtain Cumulative Estimates of *P* (for estimation of densities later)
 
@@ -200,7 +282,7 @@ densdata $ offset <- log(densdata $ area * densdata $ prob)
 
 Plot to check
 
-![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 # Comparing Models
 

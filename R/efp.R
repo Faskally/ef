@@ -27,6 +27,12 @@
 #' approximation, so that \code{logLik} and \code{AIC} are based on the marginal
 #' likelihood. Fitted values are conditional on the estimated random effects.
 #'
+#' Smooth terms, such as \code{s(x, k = 3)}, can also be included in the
+#' formula. These are fitted as unpenalised regression splines: no smoothing
+#' parameters are estimated, so the flexibility of a smooth is set entirely
+#' by its basis dimension \code{k}, which should be kept small (typically
+#' \code{k = 3}, i.e. 2 degrees of freedom).
+#'
 #' @examples
 #' # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
 #' ef_data <- data.frame(n      = c(100, 53, 24, 50, 26, 12,
@@ -79,12 +85,30 @@
 #' out <- cbind(ef_data, p = fitted(m2, type = "p"))
 #' out
 #'
+#' # a smooth effect of a continuous covariate. Smooths are unpenalised, so
+#' # the flexibility is set by k
+#' data(ef_data)
+#' ef_data$sampleID <- factor(paste(ef_data$date, ef_data$siteID,
+#'                                  ef_data$lifestage, ef_data$species))
+#' ef_data$pass12 <- factor(replace(ef_data$pass, ef_data$pass > 2, 2))
+#' ef_data$nyear <- as.numeric(as.character(ef_data$year))
+#' m5 <- efp(count ~ siteID + pass12 + lifestage + s(nyear, k = 3),
+#'           data = ef_data, pass = pass, id = sampleID)
+#' m5
+#'
+#' # predicted capture probability over the smooth, with standard errors
+#' newdata <- data.frame(siteID = "Site1", pass12 = "1", lifestage = "Fry",
+#'                       nyear = seq(2011, 2015, by = 0.5))
+#' pred <- predict(m5, newdata = newdata, type = "response", se.fit = TRUE)
+#' cbind(newdata, fit = pred$fit, se = pred$se.fit)
+#'
 #' @importFrom RTMB MakeADFun sdreport ADREPORT REPORT dnorm
 #' @importFrom mgcv gam
 #' @importFrom methods as
 #' @importClassesFrom Matrix TsparseMatrix
 #' @importFrom stats binomial
 #' @importFrom stats optim
+#' @importFrom stats ave
 #'
 #' @export
 efp <- function(formula, data = NULL, pass = pass, id = id,
@@ -204,12 +228,18 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   out$p <- unlist(out$rep$ps)
   # Re-order to match input data
   out$p <- out$p[order(ord_output)]
+  # probability of capture in each pass, allowing for the fish removed in
+  # previous passes
+  out$pi <- as.vector(
+    ave(out$p, factor(id), FUN = function(x) x * c(1, cumprod(1 - x)[-length(x)]))
+  )
   
   fx_pars <- grep("beta", names(opt$par))
   out$sdrep <- sdreport(obj, getJointPrecision = hessian && length(re_cols) > 0)
   # keep data for re-fitting
   # efdat needs to be reordered to be compatible with other structures 
   out$data <- data
+  out$offset <- offset
   out$formula <- formula # for printing and summary
   out$terms <- Gsetup$terms
   out$call <- match.call()

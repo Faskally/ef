@@ -9,3 +9,19 @@
 A set of functions to estimate capture probabilities and densities
 from multipass pass removal data.
 }
+\author{
+\strong{Maintainer}: Colin Millar \email{colin.millar@ices.dk}
+
+Authors:
+\itemize{
+  \item Rob Fryer
+  \item Iain Malcolm
+  \item Ross Glover
+}
+
+Other contributors:
+\itemize{
+  \item Marine Scotland Science [copyright holder]
+}
+
+}

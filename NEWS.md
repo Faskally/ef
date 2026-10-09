@@ -6,6 +6,10 @@
 * remove `overdispersion()` and `BICadj()`, these are replaced by visit and
   sample random effects
 * remove the `sample_re` argument of `efp()`
+* add a `predict()` method for `efp` fits, with predictions for new data,
+  standard errors and the option to exclude random effects
+* `fitted(type = "pi")` now returns the probability of capture in each pass
+* add examples of smooth terms to the help and the README (#1)
 
 # ef 1.2.0 (2020-10-18)
 

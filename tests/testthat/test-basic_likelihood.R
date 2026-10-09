@@ -224,3 +224,113 @@ test_that("gam conversion", {
     fitted(m2)
   )
 })
+
+test_that("prediction", {
+  data(ef_data)
+  ef_data$sampleID <-
+    factor(paste(
+      ef_data$date, ef_data$siteID,
+      ef_data$lifestage, ef_data$species
+    ))
+  ef_data$visitID <- factor(paste(ef_data$date, ef_data$siteID))
+
+  m1 <- efp(count ~ lifestage,
+    data = ef_data, pass = pass, id = sampleID
+  )
+  m2 <- efp(count ~ lifestage + s(visitID, bs = "re"),
+    data = ef_data, pass = pass, id = sampleID
+  )
+
+  # predictions for the fitted data are the fitted values
+  expect_equal(as.vector(predict(m1, type = "response")), fitted(m1))
+  expect_equal(as.vector(predict(m2, type = "response")), fitted(m2))
+  expect_equal(
+    as.vector(predict(m2, newdata = ef_data, type = "response")),
+    fitted(m2)
+  )
+  expect_equal(as.vector(predict(m1)), logit(fitted(m1)))
+  expect_equal(unname(predict(m2, type = "lpmatrix")), unname(m2$G))
+
+  # new data
+  newdata <- data.frame(lifestage = c("Fry", "Parr"))
+  pred <- predict(m1, newdata = newdata, se.fit = TRUE)
+  expect_equal(as.vector(pred$fit), unname(c(coef(m1)[1], sum(coef(m1)))))
+  expect_equal(as.vector(pred$se.fit[1]), unname(sqrt(m1$Vb[1, 1])))
+  expect_equal(as.vector(pred$se.fit[2]), sqrt(sum(m1$Vb)))
+
+  # delta method on the response scale
+  pred_p <- predict(m1, newdata = newdata, type = "response", se.fit = TRUE)
+  expect_equal(pred_p$fit, invlogit(pred$fit))
+  expect_equal(pred_p$se.fit, pred$se.fit * pred_p$fit * (1 - pred_p$fit))
+
+  # random effects can be excluded, to predict for unobserved levels
+  newdata$visitID <- "a new visit"
+  pred <- predict(m2, newdata = newdata, exclude = "s(visitID)", se.fit = TRUE)
+  expect_equal(as.vector(pred$fit), unname(c(coef(m2)[1], sum(coef(m2)))))
+  expect_equal(as.vector(pred$se.fit[2]), sqrt(sum(m2$Vb)))
+  expect_equal(
+    predict(m2, newdata = newdata["lifestage"], exclude = "s(visitID)"),
+    pred$fit
+  )
+
+  # offsets are included in predictions for the fitted data
+  m3 <- efp(count ~ lifestage,
+    data = ef_data, pass = pass, id = sampleID,
+    offset = rep(0.1, nrow(ef_data))
+  )
+  expect_equal(as.vector(predict(m3, type = "response")), fitted(m3))
+
+  m4 <- efp(count ~ lifestage,
+    data = ef_data, pass = pass, id = sampleID, hessian = FALSE
+  )
+  expect_error(predict(m4, se.fit = TRUE), "hessian = TRUE")
+})
+
+test_that("pass probabilities", {
+  data <- data.frame(n = c(100, 50, 25), pass = 1:3, id = 1)
+  m <- efp(n ~ 1, data = data)
+  p <- fitted(m)
+  expect_equal(fitted(m, type = "pi"), p * c(1, 1 - p[1], (1 - p[1]) * (1 - p[2])))
+  expect_equal(fitted(m, type = "both"), list(p = p, pi = fitted(m, type = "pi")))
+})
+
+test_that("smooth terms", {
+  data(ef_data)
+  ef_data$sampleID <-
+    factor(paste(
+      ef_data$date, ef_data$siteID,
+      ef_data$lifestage, ef_data$species
+    ))
+  ef_data$nyear <- as.numeric(as.character(ef_data$year))
+
+  m0 <- efp(count ~ lifestage,
+    data = ef_data, pass = pass, id = sampleID
+  )
+  m1 <- efp(count ~ lifestage + s(nyear, k = 3),
+    data = ef_data, pass = pass, id = sampleID
+  )
+
+  expect_equal(m1$convergence, 0)
+  expect_equal(
+    names(coef(m1)),
+    c("(Intercept)", "lifestageParr", "s(nyear).1", "s(nyear).2")
+  )
+  expect_gte(as.numeric(logLik(m1)), as.numeric(logLik(m0)) - 1e-6)
+
+  # predictions agree with the fitted values, and with the gam conversion
+  expect_equal(
+    as.vector(predict(m1, newdata = ef_data, type = "response")),
+    fitted(m1)
+  )
+  m1_gam <- suppressMessages(as.gam(m1))
+  expect_equal(
+    as.vector(predict(m1_gam, newdata = ef_data, type = "response")),
+    fitted(m1)
+  )
+
+  # prediction between the observed years
+  newdata <- data.frame(lifestage = "Fry", nyear = c(2011.5, 2013, 2014.5))
+  pred <- predict(m1, newdata = newdata, type = "response", se.fit = TRUE)
+  expect_true(all(pred$fit > 0 & pred$fit < 1))
+  expect_true(all(pred$se.fit > 0))
+})
