@@ -16,29 +16,10 @@
 # than integrated out, so the choice has to be reproducible.
 
 # orthonormal basis for the null space of a positive semi-definite matrix
-null_space <- function(S, tol = 1e-8) {
-  k <- ncol(S)
-  if (k <= 1500) {
-    es <- eigen(as.matrix(S), symmetric = TRUE)
-    return(es$vectors[, es$values < tol * max(es$values), drop = FALSE])
-  }
-
-  # too big for a dense decomposition: use subspace iteration on the
-  # inverse of a slightly shifted S, which only needs sparse solves
-  scale <- max(abs(diag(S)))
-  ch <- Cholesky(forceSymmetric(S + Diagonal(k, tol * scale)))
-  q <- 8
-  repeat {
-    V <- qr.Q(qr(matrix(stats::rnorm(k * q), k, q)))
-    for (i in 1:10) {
-      V <- qr.Q(qr(as.matrix(solve(ch, V))))
-    }
-    es <- eigen(as.matrix(crossprod(V, S %*% V)), symmetric = TRUE)
-    is_null <- es$values < tol * scale
-    if (!all(is_null) || q >= k) break
-    q <- min(2 * q, k)
-  }
-  V %*% es$vectors[, is_null, drop = FALSE]
+null_space <- function(S) {
+  es <- eigen(as.matrix(S), symmetric = TRUE)
+  tol <- max(es$values) * .Machine$double.eps^0.75
+  es$vectors[, es$values < tol, drop = FALSE]
 }
 
 # split a smooth into fixed and random effects
@@ -46,12 +27,15 @@ null_space <- function(S, tol = 1e-8) {
 #   centred: if TRUE the constant function is removed from the smooth,
 #     which requires that it is in the null space of the penalty. If it is
 #     not NULL is returned.
-smooth_block <- function(X, S, centred = FALSE) {
+#   N: a basis for the null space of the penalty, if known
+smooth_block <- function(X, S, centred = FALSE, N = NULL) {
   X <- as(as(X, "generalMatrix"), "CsparseMatrix")
   S <- lapply(S, function(s) forceSymmetric(as(s, "CsparseMatrix")))
   k <- ncol(X)
 
-  N <- null_space(Reduce(`+`, lapply(S, function(s) s / max(abs(s@x)))))
+  if (is.null(N)) {
+    N <- null_space(Reduce(`+`, lapply(S, function(s) s / max(abs(s@x)))))
+  }
   Ng <- N
   const <- NULL
 
@@ -119,6 +103,25 @@ constraint_basis <- function(sm, k) {
   list(Z = Z[, -indi[nx], drop = FALSE], q1 = q1)
 }
 
+# the design matrix and penalty of a Markov random field smooth, in the
+# order of the levels in the penalty supplied by the user. For a random walk
+# this is the order of the walk, mgcv sorts the levels alphabetically.
+mrf_parts <- function(sm, mf) {
+  S <- sm$xt$penalty
+  levels <- rownames(S)
+  x <- as.character(mf[[sm$term]])
+  list(
+    X = sparseMatrix(
+      i = seq_along(x), j = match(x, levels), x = 1,
+      dims = c(length(x), length(levels))
+    ),
+    S = list(Matrix(unname(S), sparse = TRUE)),
+    N = attr(S, "null.space"),
+    # the position of each level in the mgcv basis
+    order = match(levels, levels(sm$knots))
+  )
+}
+
 # set up the penalised terms in a model
 #   Gsetup: the output of gam(..., fit = FALSE)
 #   sparse: if TRUE the smooths are constructed without the mgcv
@@ -131,11 +134,17 @@ smooth_setup <- function(Gsetup, formula, sparse = TRUE) {
   intercept <- which(Gsetup$term.names == "(Intercept)")
 
   penalised <- which(vapply(Gsetup$smooth, function(x) length(x$S) > 0, TRUE))
-  if (!length(penalised)) return(list())
+  ncons <- vapply(Gsetup$smooth, function(x) max(0, attr(x, "nCons")), 0)
+  is_mrf <-
+    vapply(Gsetup$smooth, function(x) {
+      inherits(x, "mrf.smooth") && x$by == "NA" && !is.null(rownames(x$xt$penalty)) &&
+        x$bs.dim == nrow(x$xt$penalty)
+    }, TRUE)
 
-  # the smooths without identifiability constraints
+  # the smooths without identifiability constraints, only needed for
+  # constrained smooths which are not Markov random fields
   full <- NULL
-  if (sparse) {
+  if (sparse && any(ncons[penalised] == 1 & !is_mrf[penalised])) {
     full <-
       try(
         unlist(
@@ -158,20 +167,21 @@ smooth_setup <- function(Gsetup, formula, sparse = TRUE) {
   lapply(penalised, function(i) {
     sm <- Gsetup$smooth[[i]]
     cols <- sm$first.para:sm$last.para
-    ncons <- attr(sm, "nCons")
-    if (is.null(ncons)) ncons <- 0
 
     block <- NULL
-    if (!is.null(full) && ncons == 0 && ncol(full[[i]]$X) == length(cols)) {
-      block <- smooth_block(full[[i]]$X, full[[i]]$S)
-      block$TG <- block$B
-    } else if (!is.null(full) && ncons == 1 && length(intercept) == 1 &&
-               inherits(attr(sm, "qrc"), "qr")) {
-      X <- full[[i]]$X
-      con <- constraint_basis(sm, ncol(X))
+    if (sparse && ncons[i] == 1 && length(intercept) == 1 &&
+        inherits(attr(sm, "qrc"), "qr") && (is_mrf[i] || !is.null(full))) {
+      if (is_mrf[i]) {
+        parts <- mrf_parts(sm, Gsetup$mf)
+      } else {
+        parts <- list(X = full[[i]]$X, S = full[[i]]$S, order = seq_len(ncol(full[[i]]$X)))
+      }
+      con <- constraint_basis(sm, ncol(parts$X))
+      con$Z <- con$Z[parts$order, , drop = FALSE]
+      con$q1 <- con$q1[parts$order]
       if (ncol(con$Z) == length(cols) &&
-          max(abs(X %*% con$Z - G[, cols])) < 1e-8 * max(abs(G[, cols]))) {
-        block <- smooth_block(X, full[[i]]$S, centred = TRUE)
+          max(abs(parts$X %*% con$Z - G[, cols])) < 1e-8 * max(abs(G[, cols]))) {
+        block <- smooth_block(parts$X, parts$S, centred = TRUE, N = parts$N)
       }
       if (!is.null(block)) {
         # move the constant part of the smooth to the intercept, so that the
@@ -183,8 +193,8 @@ smooth_setup <- function(Gsetup, formula, sparse = TRUE) {
     }
 
     if (is.null(block)) {
-      # use the constrained mgcv basis and penalties, undoing the scaling of
-      # the penalties
+      # use the mgcv basis and penalties, undoing the scaling of the
+      # penalties. These are dense if the smooth is constrained.
       S <- Map(function(s, scale) s * scale, sm$S, sm$S.scale)
       block <- smooth_block(G[, cols, drop = FALSE], S)
       block$TG <- block$B
@@ -192,13 +202,14 @@ smooth_setup <- function(Gsetup, formula, sparse = TRUE) {
 
     block$cols <- cols
     block$label <- sm$label
-    block$sparse <- !is.null(block$Tint) || (!is.null(full) && ncons == 0)
 
     if (ncol(block$Xf)) {
       colnames(block$Xf) <- paste0(sm$label, ".null", seq_len(ncol(block$Xf)))
     }
-    if (length(block$keep) == length(cols) && is.null(block$Tint)) {
+    if (length(block$keep) == length(cols)) {
       colnames(block$Zu) <- Gsetup$term.names[cols]
+    } else if (is_mrf[i] && !is.null(block$Tint)) {
+      colnames(block$Zu) <- paste0(sm$label, ".", rownames(sm$xt$penalty)[block$keep])
     } else {
       colnames(block$Zu) <- paste0(sm$label, ".u", block$keep)
     }

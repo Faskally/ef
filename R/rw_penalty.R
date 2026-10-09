@@ -11,7 +11,8 @@
 #'   including any for which there are no data.
 #' @param order the order of the random walk, 1 or 2
 #' @return a square matrix with one row and column for each level, with the
-#'   levels as dimnames
+#'   levels as dimnames. The matrix has an attribute, \code{null.space},
+#'   which is a basis for the functions which are not penalised.
 #'
 #' @details
 #' A first order random walk (\code{order = 1}) penalises the differences
@@ -51,5 +52,9 @@ rw_penalty <- function(levels, order = 1) {
   D <- diff(diag(k), differences = order)
   S <- crossprod(D)
   dimnames(S) <- list(levels, levels)
+  # the null space of the penalty is known: a constant, and a linear trend
+  # for a second order random walk. This is more reliable than finding it
+  # numerically when there are many levels.
+  attr(S, "null.space") <- qr.Q(qr(cbind(1, seq_len(k))))[, seq_len(order), drop = FALSE]
   S
 }
