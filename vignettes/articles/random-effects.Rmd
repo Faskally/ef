@@ -90,7 +90,7 @@ The estimated standard deviations are
 m_both$sigma
 ```
 
-The standard deviation between samples is close to the 0.3 used in the simulation, but the standard deviation between visits is well above 0.4. This is because the model has no terms for year or day of the year, so the visit random effects are also absorbing the smooth effects of these two covariates.
+The standard deviation between samples is a little below the 0.3 used in the simulation, but the standard deviation between visits is well above 0.4. This is because the model has no terms for year or day of the year, so the visit random effects are also absorbing the smooth effects of these two covariates.
 
 This shows up when the estimated visit effects are plotted. They are in `random`, in the order of the levels of the factor.
 
@@ -116,7 +116,7 @@ There is a clear pattern against both covariates, which random effects should no
 
 ## Why the random effects matter
 
-Leaving out the random effects does not change the fixed effects very much, but it does make them look more precise than they are.
+Leaving out the random effects changes the estimates of the fixed effects, and makes them look more precise than they are.
 
 ```{r}
 se <- function(m) sqrt(diag(vcov(m)))
@@ -129,7 +129,7 @@ round(
 )
 ```
 
-The standard errors of the intercept and the lifestage effect are much larger when the random effects are included, because fish from the same visit are no longer treated as independent information about capture probability.
+The standard error of the intercept more than doubles when the random effects are included, and that of the lifestage effect is about a third larger, because fish from the same visit are no longer treated as independent information about capture probability. The estimate of the lifestage effect is also closer to the simulated value of 0.5.
 
 ## Fitted values and predictions
 

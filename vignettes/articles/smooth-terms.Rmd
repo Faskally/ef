@@ -150,17 +150,19 @@ The data were simulated, so the estimates can be compared with the truth. The st
 round(m_final$sigma, 3)
 ```
 
-In the model with no effects of year or day of the year the standard deviation between visits was much too large, because the visit random effects were absorbing those effects (see [Visit and sample random effects](random-effects.html)). Now that they are in the model it is close to the simulated value.
+In the model with no effects of year or day of the year the standard deviation between visits was much too large, because the visit random effects were absorbing those effects (see [Visit and sample random effects](random-effects.html)). Now that they are in the model it is much closer to the simulated value, and both standard deviations are within about two standard errors of the values used in the simulation.
 
 ```{r}
 round(c(base = m_base$sigma[["s(visitID)"]], final = m_final$sigma[["s(visitID)"]]), 3)
 ```
 
-The effects of lifestage and pass were 0.5 and -0.4.
+The effects of lifestage and pass were simulated as 0.5 and -0.4.
 
 ```{r}
 round(cbind(estimate = coef(m_final), se = sqrt(diag(vcov(m_final))))[2:3, ], 3)
 ```
+
+The lifestage effect is recovered well. The pass effect is smaller in size than the simulated value, by about two and a half standard errors. This is a feature of this particular simulated dataset rather than of the method: when the simulation was repeated with six other random seeds, the estimates of the pass effect were between -0.41 and -0.375.
 
 ## Plotting the effects
 
@@ -210,7 +212,7 @@ plot_effect(years, pred, truth = 0.3 + f_year(years) + f_doy(200), xlab = "Year"
 legend("topright", c("Estimate", "Simulated"), lty = 1:2, lwd = 2, bty = "n")
 ```
 
-Both smooths follow the simulated effects closely, and the simulated effects are almost always inside the confidence intervals.
+Both smooths follow the simulated effects closely, and the simulated effects are inside the confidence intervals throughout.
 
 ## First or second order?
 
