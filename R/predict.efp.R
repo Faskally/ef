@@ -16,8 +16,7 @@
 #'   the way to predict for levels of a random effect that were not in the
 #'   data used to fit the model. Variables that are only used by excluded
 #'   smooth or random effect terms need not be supplied in \code{newdata}.
-#' @param ... further arguments passed to \code{\link[mgcv]{predict.gam}}
-#'   when building the design matrix
+#' @param ... further arguments, ignored
 #' @return a vector of predictions, or if \code{se.fit = TRUE} a list with
 #'   elements \code{fit} and \code{se.fit}. If \code{type = "lpmatrix"} a
 #'   matrix.
@@ -41,7 +40,8 @@
 #' newdata <- data.frame(lifestage = c("Fry", "Parr"))
 #' predict(m1, newdata = newdata, type = "response", se.fit = TRUE)
 #'
-#' @importFrom stats predict
+#' @importFrom stats predict model.frame model.matrix delete.response
+#' @importFrom mgcv PredictMat
 #' @export
 predict.efp <- function(object, newdata = NULL,
   type = c("link", "response", "lpmatrix"), se.fit = FALSE,
@@ -49,25 +49,7 @@ predict.efp <- function(object, newdata = NULL,
 
   type <- match.arg(type)
 
-  if (is.null(newdata) && is.null(exclude)) {
-    X <- object$G
-  } else {
-    g1 <- efp_gam(object)
-    if (is.null(newdata)) {
-      X <- predict(g1, type = "lpmatrix", exclude = exclude, ...)
-    } else {
-      # variables only used by excluded smooths do not affect the prediction
-      # and may be missing, or have levels that were not in the fitted data
-      labels <- vapply(g1$smooth, function(x) x$label, "")
-      smooth_vars <- lapply(g1$smooth, function(x) setdiff(c(x$term, x$by), "NA"))
-      used <- c(all.vars(g1$pterms), unlist(smooth_vars[!labels %in% exclude]))
-      unused <- setdiff(unlist(smooth_vars[labels %in% exclude]), used)
-      for (v in unused) {
-        newdata[[v]] <- rep(object$data[[v]][1], nrow(newdata))
-      }
-      X <- predict(g1, newdata = newdata, type = "lpmatrix", exclude = exclude, ...)
-    }
-  }
+  X <- efp_lpmatrix(object, newdata, exclude)
 
   if (type == "lpmatrix") {
     return(X)
@@ -101,4 +83,64 @@ predict.efp <- function(object, newdata = NULL,
   } else {
     fit
   }
+}
+
+# the design matrix for new data, with the columns of excluded terms set to
+# zero
+efp_lpmatrix <- function(object, newdata = NULL, exclude = NULL) {
+  Gsetup <- object$Gsetup
+  labels <- vapply(Gsetup$smooth, function(x) x$label, "")
+  excluded <- labels %in% exclude
+
+  if (is.null(newdata)) {
+    X <- object$G
+  } else {
+    newdata <- as.data.frame(newdata)
+
+    # variables only used by excluded smooths do not affect the prediction
+    # and may be missing, or have levels that were not in the fitted data
+    smooth_vars <- lapply(Gsetup$smooth, function(x) setdiff(c(x$term, x$by), "NA"))
+    used <- c(all.vars(Gsetup$pterms), unlist(smooth_vars[!excluded]))
+    unused <- setdiff(unlist(smooth_vars[excluded]), used)
+    for (v in unused) {
+      newdata[[v]] <- rep(Gsetup$mf[[v]][1], nrow(newdata))
+    }
+
+    # factors need the levels used in the fit
+    for (v in intersect(names(newdata), names(Gsetup$mf))) {
+      if (is.factor(Gsetup$mf[[v]])) {
+        x <- factor(newdata[[v]], levels = levels(Gsetup$mf[[v]]))
+        if (any(is.na(x) & !is.na(newdata[[v]]))) {
+          stop("newdata has levels of ", v, " which were not in the fitted data")
+        }
+        newdata[[v]] <- x
+      }
+    }
+
+    X <- matrix(0, nrow(newdata), ncol(object$G))
+    colnames(X) <- colnames(object$G)
+
+    # parametric terms
+    if (Gsetup$nsdf > 0) {
+      pterms <- delete.response(Gsetup$pterms)
+      mf <- model.frame(pterms, newdata, xlev = Gsetup$xlevels, na.action = stats::na.pass)
+      X[, seq_len(Gsetup$nsdf)] <- model.matrix(pterms, mf, contrasts.arg = Gsetup$contrasts)
+    }
+
+    # smooth terms
+    for (sm in Gsetup$smooth[!excluded]) {
+      X[, sm$first.para:sm$last.para] <- PredictMat(sm, newdata)
+    }
+  }
+
+  # set excluded terms to zero
+  for (sm in Gsetup$smooth[excluded]) {
+    X[, sm$first.para:sm$last.para] <- 0
+  }
+  pexclude <- which(attr(Gsetup$pterms, "term.labels") %in% exclude)
+  if (length(pexclude)) {
+    X[, which(Gsetup$assign %in% pexclude)] <- 0
+  }
+
+  X
 }

@@ -29,6 +29,7 @@ Indicators, 93, 302-315. \doi{10.1016/j.ecolind.2018.05.013}
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://faskally.github.io/ef/}
   \item \url{https://github.com/Faskally/ef}
   \item Report bugs at \url{https://github.com/Faskally/ef/issues}
 }

@@ -32,8 +32,7 @@ the way to predict for levels of a random effect that were not in the
 data used to fit the model. Variables that are only used by excluded
 smooth or random effect terms need not be supplied in \code{newdata}.}
 
-\item{...}{further arguments passed to \code{\link[mgcv]{predict.gam}}
-when building the design matrix}
+\item{...}{further arguments, ignored}
 }
 \value{
 a vector of predictions, or if \code{se.fit = TRUE} a list with
