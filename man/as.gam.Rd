@@ -18,6 +18,11 @@ tools in the \code{mgcv} package can be used. The coefficients and their
 variances are those estimated by \code{efp}, but the smoothing parameters
 and effective degrees of freedom in the gam object are not.
 }
+\details{
+The conversion fits a model using \code{mgcv}, which can take a very
+long time if the model has many random effects. Predictions do not need
+the conversion, see \code{\link{predict.efp}}.
+}
 \examples{
 data(ef_data)
 ef_data$sampleID <- factor(paste(ef_data$date, ef_data$siteID,

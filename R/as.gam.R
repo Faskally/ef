@@ -5,6 +5,10 @@
 #' variances are those estimated by \code{efp}, but the smoothing parameters
 #' and effective degrees of freedom in the gam object are not.
 #'
+#' The conversion fits a model using \code{mgcv}, which can take a very
+#' long time if the model has many random effects. Predictions do not need
+#' the conversion, see \code{\link{predict.efp}}.
+#'
 #'
 #' @param object an efp fitted model
 #' @return an object of class \code{gam}, see \code{\link[mgcv]{gamObject}}

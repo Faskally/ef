@@ -1,0 +1,158 @@
+---
+title: "Visit and sample random effects"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
+# the simulation code is shared between the articles
+read_shared <- knitr::read_chunk
+read_shared("simulate.R")
+```
+
+Capture probability usually varies between visits to a site, and between the samples taken on a visit, by more than covariates can explain. This worked example shows how to include that variation using random effects, how to choose between models, and how to look at the estimated effects.
+
+```{r}
+library(ef)
+```
+
+## The data
+
+The data are simulated, as described in [Simulating electrofishing data](simulating-data.html), so the estimates can be compared with the truth. There are 30 sites, each visited once a year for 15 years, with a sample of fry and a sample of parr on each visit and three passes for each sample.
+
+<details>
+<summary>Code to simulate the data</summary>
+
+```{r sim-design}
+```
+```{r sim-effects}
+```
+```{r sim-samples}
+```
+```{r sim-passes}
+```
+```{r sim-removal}
+```
+```{r sim-factors}
+```
+
+</details>
+
+```{r}
+head(ef_sim[c("visitID", "sampleID", "lifestage", "pass", "pass12", "count")])
+```
+
+The random effects were simulated with a standard deviation of 0.4 between visits and 0.3 between samples.
+
+## Fitting the models
+
+Random effects are added to the formula using `s(f, bs = "re")`, where `f` is a factor. Four models are compared, all with fixed effects for lifestage and pass:
+
+```{r}
+# no random effects
+m_none <- efp(count ~ lifestage + pass12,
+              data = ef_sim, pass = pass, id = sampleID)
+
+# variation between visits
+m_visit <- efp(count ~ lifestage + pass12 + s(visitID, bs = "re"),
+               data = ef_sim, pass = pass, id = sampleID)
+
+# variation between samples
+m_sample <- efp(count ~ lifestage + pass12 + s(sampleID, bs = "re"),
+                data = ef_sim, pass = pass, id = sampleID)
+
+# variation between visits, and between samples within visits
+m_both <- efp(count ~ lifestage + pass12 +
+                s(visitID, bs = "re") + s(sampleID, bs = "re"),
+              data = ef_sim, pass = pass, id = sampleID)
+```
+
+## Model selection
+
+The random effects are integrated out of the likelihood, so the models can be compared using AIC. Each random effect term adds one parameter, its standard deviation.
+
+```{r}
+aic <- AIC(m_none, m_visit, m_sample, m_both)
+aic$delta <- aic$AIC - min(aic$AIC)
+aic
+```
+
+Both sources of variation are needed: the model with visit and sample random effects has the lowest AIC by a long way, and the model with no random effects is much the worst.
+
+```{r}
+m_both
+```
+
+## What the random effects are picking up
+
+The estimated standard deviations are
+
+```{r}
+m_both$sigma
+```
+
+The standard deviation between samples is close to the 0.3 used in the simulation, but the standard deviation between visits is well above 0.4. This is because the model has no terms for year or day of the year, so the visit random effects are also absorbing the smooth effects of these two covariates.
+
+This shows up when the estimated visit effects are plotted. They are in `random`, in the order of the levels of the factor.
+
+```{r}
+visit_hat <- m_both$random[grepl("visitID", names(m_both$random))]
+visit_data <- unique(ef_sim[c("visitID", "year", "doy")])
+visit_data <- visit_data[order(visit_data$visitID), ]
+visit_data$estimate <- visit_hat
+```
+
+```{r, fig.alt = "Estimated visit random effects plotted against year and day of the year, showing a trend in both"}
+par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
+boxplot(estimate ~ year, data = visit_data,
+        xlab = "Year", ylab = "Estimated visit effect")
+abline(h = 0, lty = 2)
+plot(estimate ~ doy, data = visit_data, col = "grey40",
+     xlab = "Day of year", ylab = "Estimated visit effect")
+lines(lowess(visit_data$doy, visit_data$estimate), lwd = 2)
+abline(h = 0, lty = 2)
+```
+
+There is a clear pattern against both covariates, which random effects should not have. Plots like these are a useful check on any model, and here they point to the model that is fitted in [Smooth terms for year and day of the year](smooth-terms.html), where the standard deviation between visits comes down to the simulated value.
+
+## Why the random effects matter
+
+Leaving out the random effects does not change the fixed effects very much, but it does make them look more precise than they are.
+
+```{r}
+se <- function(m) sqrt(diag(vcov(m)))
+round(
+  cbind(
+    estimate_none = coef(m_none), se_none = se(m_none),
+    estimate_both = coef(m_both), se_both = se(m_both)
+  ),
+  3
+)
+```
+
+The standard errors of the intercept and the lifestage effect are much larger when the random effects are included, because fish from the same visit are no longer treated as independent information about capture probability.
+
+## Fitted values and predictions
+
+Fitted values are conditional on the estimated random effects, so they are specific to each sample.
+
+```{r}
+ef_sim$fit <- fitted(m_both)
+```
+
+```{r, fig.alt = "Scatter plot of fitted against simulated capture probability"}
+plot(ef_sim$p, ef_sim$fit, col = "grey40",
+     xlab = "Simulated capture probability", ylab = "Fitted capture probability")
+abline(0, 1, lwd = 2)
+```
+
+To predict for a typical visit and sample, rather than one of those in the data, the random effects are left out of the prediction using `exclude`.
+
+```{r}
+newdata <- expand.grid(lifestage = c("Fry", "Parr"), pass12 = c("1", "2"))
+pred <-
+  predict(
+    m_both, newdata = newdata, type = "response", se.fit = TRUE,
+    exclude = c("s(visitID)", "s(sampleID)")
+  )
+cbind(newdata, p = round(pred$fit, 3), se = round(pred$se.fit, 3))
+```

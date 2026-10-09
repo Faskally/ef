@@ -26,3 +26,14 @@ reference:
 - title: Package
   contents:
   - ef-package
+
+articles:
+- title: Worked examples
+  desc: >
+    Worked examples of efp() using simulated data, so that the estimates
+    can be compared with the truth.
+  navbar: Worked examples
+  contents:
+  - articles/simulating-data
+  - articles/random-effects
+  - articles/smooth-terms

@@ -1,0 +1,109 @@
+---
+title: "Simulating electrofishing data"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
+# the simulation code is shared between the articles
+read_shared <- knitr::read_chunk
+read_shared("simulate.R")
+```
+
+This article simulates a multipass electrofishing dataset in which everything about capture probability is known: the effects of lifestage and pass, smooth effects of year and day of the year, and random variation between visits and between samples. The same dataset is used in the worked examples on [random effects](random-effects.html) and [smooth terms](smooth-terms.html), where the models are checked against the values used here.
+
+```{r}
+library(ef)
+```
+
+## The sampling design
+
+Thirty sites are each visited once a year for 15 years, giving 450 visits. Each visit is on a random day between the start of June and the end of October, and each site has its own fished area.
+
+```{r sim-design}
+```
+
+```{r}
+head(visits)
+```
+
+## Smooth effects of year and day of the year
+
+Capture probability varies smoothly between years, and over the season: it is highest in the middle of July and lower in the autumn. Neither effect is linear, so a model with linear terms would miss most of the pattern. Both are on the logit scale.
+
+```{r sim-effects}
+```
+
+```{r, fig.alt = "Two line plots of the simulated effects of year and day of the year on logit capture probability"}
+par(mfrow = c(1, 2), mar = c(4, 4, 1, 1))
+plot(years, f_year(years), type = "b", pch = 16,
+     xlab = "Year", ylab = "Effect on logit capture probability")
+plot(152:304, f_doy(152:304), type = "l",
+     xlab = "Day of year", ylab = "Effect on logit capture probability")
+```
+
+## Samples and random effects
+
+A sample is the set of passes for one lifestage on one visit, so each visit has two samples, one for fry and one for parr. There are two sources of random variation in capture probability:
+
+  * between visits, with standard deviation `r 0.4` on the logit scale. This is shared by the fry and parr caught on a visit, for example because of the water level or the fishing team on the day
+  * between samples, with standard deviation `r 0.3`, which is extra variation that is specific to a lifestage on a visit
+
+The number of fish in the fished area depends on the lifestage, the area and the site. It plays no part in the model for capture probability, but is needed to simulate the counts.
+
+```{r sim-samples}
+```
+
+## Capture probability
+
+The data have one row for each pass of each sample. Capture probability is higher for parr than for fry, and is lower on the second and third passes than on the first. Giving the second and third passes the same capture probability is what makes the model identifiable (Millar *et al.*, 2016), and the factor `pass12` is used for this throughout.
+
+```{r sim-passes}
+```
+
+## Removing the fish
+
+On each pass every fish that is still in the fished area is caught with the capture probability for that pass, and the fish that are caught are removed.
+
+```{r sim-removal}
+```
+
+Finally, the random walk smooths used in the worked examples need factors in which every step of the walk is a level, including days of the year on which no site was fished.
+
+```{r sim-factors}
+```
+
+## The simulated data
+
+```{r}
+head(ef_sim[c("siteID", "year", "doy", "lifestage", "pass", "count")])
+```
+
+The total catch falls from pass to pass, as it should for removal data.
+
+```{r}
+xtabs(count ~ pass + lifestage, data = ef_sim)
+```
+
+The simulated capture probabilities cover a wide range.
+
+```{r, fig.alt = "Histogram of the simulated capture probabilities"}
+hist(ef_sim$p, breaks = 30, main = "", xlab = "Capture probability")
+```
+
+## The values to recover
+
+These are the values that the worked examples try to estimate.
+
+| | Value |
+|---|---|
+| Intercept (fry, first pass) | 0.3 |
+| Parr relative to fry | 0.5 |
+| Second and third pass relative to the first | -0.4 |
+| Standard deviation between visits | 0.4 |
+| Standard deviation between samples | 0.3 |
+| Effect of year | `f_year()` |
+| Effect of day of the year | `f_doy()` |
+
+## Reference
+
+Millar, C. P., Fryer, R. J., Millidine, K. J. and Malcolm, I. A. (2016) Modelling capture probability of Atlantic salmon (*Salmo salar*) from a diverse national electrofishing dataset: Implications for the estimation of abundance. *Fisheries Research*, 177, 1-12. <https://doi.org/10.1016/j.fishres.2016.01.001>

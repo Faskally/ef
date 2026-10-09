@@ -1,0 +1,240 @@
+---
+title: "Smooth terms for year and day of the year"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
+# the simulation code is shared between the articles
+read_shared <- knitr::read_chunk
+read_shared("simulate.R")
+```
+
+This worked example adds smooth effects of year and day of the year to a model with visit and sample random effects. It shows how to set up random walk smooths, how to choose between models, and how to plot the estimated effects.
+
+```{r}
+library(ef)
+```
+
+## The data
+
+The data are simulated, as described in [Simulating electrofishing data](simulating-data.html), and are the same as in [Visit and sample random effects](random-effects.html). Capture probability was simulated with smooth, non-linear effects of year and of day of the year.
+
+<details>
+<summary>Code to simulate the data</summary>
+
+```{r sim-design}
+```
+```{r sim-effects}
+```
+```{r sim-samples}
+```
+```{r sim-passes}
+```
+```{r sim-removal}
+```
+```{r sim-factors}
+```
+
+</details>
+
+## Random walk smooths
+
+The recommended smooths are first and second order random walks. A first order random walk penalises the differences between neighbouring levels, and shrinks towards a constant. A second order random walk penalises the second differences, so it gives smoother curves, and shrinks towards a linear trend. The amount of smoothing is estimated, as the standard deviation of the steps of the walk.
+
+A random walk needs two things. The first is a factor in which every step of the walk is a level, including any steps with no data. Sites were fished on most, but not all, days between June and October, so the factor for day of the year has a level for every day in that period.
+
+```{r}
+levels(ef_sim$fyear)
+range(days)
+nlevels(ef_sim$fdoy)
+```
+
+The second is a penalty matrix for those levels, from `rw_penalty()`.
+
+```{r}
+rw1_year <- rw_penalty(years, order = 1)
+rw2_year <- rw_penalty(years, order = 2)
+rw1_doy <- rw_penalty(days, order = 1)
+rw2_doy <- rw_penalty(days, order = 2)
+```
+
+The smooth is then added to the formula using the Markov random field basis from `mgcv`, `bs = "mrf"`, with the penalty passed through `xt`. The basis and the penalty are sparse, so these models are quick to fit.
+
+## Fitting the models
+
+All the models have fixed effects for lifestage and pass, and visit and sample random effects. To compare the smooths with linear trends, the covariates are centred and scaled first: the optimiser works best when covariates are on a similar scale.
+
+```{r}
+ef_sim$year_s <- (ef_sim$year - mean(ef_sim$year)) / sd(ef_sim$year)
+ef_sim$doy_s <- (ef_sim$doy - mean(ef_sim$doy)) / sd(ef_sim$doy)
+```
+
+First the effect of year: no effect, a linear trend, and first and second order random walks.
+
+```{r}
+m_base <-
+  efp(count ~ lifestage + pass12 +
+        s(visitID, bs = "re") + s(sampleID, bs = "re"),
+      data = ef_sim, pass = pass, id = sampleID)
+
+m_year_linear <-
+  efp(count ~ lifestage + pass12 + year_s +
+        s(visitID, bs = "re") + s(sampleID, bs = "re"),
+      data = ef_sim, pass = pass, id = sampleID)
+
+m_year_rw1 <-
+  efp(count ~ lifestage + pass12 +
+        s(fyear, bs = "mrf", xt = list(penalty = rw1_year)) +
+        s(visitID, bs = "re") + s(sampleID, bs = "re"),
+      data = ef_sim, pass = pass, id = sampleID)
+
+m_year_rw2 <-
+  efp(count ~ lifestage + pass12 +
+        s(fyear, bs = "mrf", xt = list(penalty = rw2_year)) +
+        s(visitID, bs = "re") + s(sampleID, bs = "re"),
+      data = ef_sim, pass = pass, id = sampleID)
+```
+
+```{r}
+aic <- AIC(m_base, m_year_linear, m_year_rw1, m_year_rw2)
+aic$delta <- aic$AIC - min(aic$AIC)
+aic
+```
+
+A linear trend in year is hardly any better than no effect of year, but both random walks improve the model a great deal: the effect of year is strong, and it is not linear. There is little to choose between the two random walks, and the first order walk is used from here on.
+
+Next the effect of day of the year is added to that model, again as a linear trend and as first and second order random walks.
+
+```{r}
+m_doy_linear <-
+  efp(count ~ lifestage + pass12 + doy_s +
+        s(fyear, bs = "mrf", xt = list(penalty = rw1_year)) +
+        s(visitID, bs = "re") + s(sampleID, bs = "re"),
+      data = ef_sim, pass = pass, id = sampleID)
+
+m_doy_rw1 <-
+  efp(count ~ lifestage + pass12 +
+        s(fyear, bs = "mrf", xt = list(penalty = rw1_year)) +
+        s(fdoy, bs = "mrf", xt = list(penalty = rw1_doy)) +
+        s(visitID, bs = "re") + s(sampleID, bs = "re"),
+      data = ef_sim, pass = pass, id = sampleID)
+
+m_doy_rw2 <-
+  efp(count ~ lifestage + pass12 +
+        s(fyear, bs = "mrf", xt = list(penalty = rw1_year)) +
+        s(fdoy, bs = "mrf", xt = list(penalty = rw2_doy)) +
+        s(visitID, bs = "re") + s(sampleID, bs = "re"),
+      data = ef_sim, pass = pass, id = sampleID)
+```
+
+```{r}
+aic <- AIC(m_year_rw1, m_doy_linear, m_doy_rw1, m_doy_rw2)
+aic$delta <- aic$AIC - min(aic$AIC)
+aic
+```
+
+Day of the year matters too, and a smooth effect is much better than a linear one. The second order random walk has the lowest AIC, and this is the final model.
+
+```{r}
+m_final <- m_doy_rw2
+m_final
+```
+
+A second order random walk has a fixed effect for its linear trend, here `s(fdoy).null1`, which is on an arbitrary scale. The starting value of each walk is also a fixed effect, so the intercept is for the first year and the first day rather than for an average year and day.
+
+## Checking the estimates
+
+The data were simulated, so the estimates can be compared with the truth. The standard deviations between visits and between samples were 0.4 and 0.3.
+
+```{r}
+round(m_final$sigma, 3)
+```
+
+In the model with no effects of year or day of the year the standard deviation between visits was much too large, because the visit random effects were absorbing those effects (see [Visit and sample random effects](random-effects.html)). Now that they are in the model it is close to the simulated value.
+
+```{r}
+round(c(base = m_base$sigma[["s(visitID)"]], final = m_final$sigma[["s(visitID)"]]), 3)
+```
+
+The effects of lifestage and pass were 0.5 and -0.4.
+
+```{r}
+round(cbind(estimate = coef(m_final), se = sqrt(diag(vcov(m_final))))[2:3, ], 3)
+```
+
+## Plotting the effects
+
+The effect of a smooth is plotted by predicting over its levels, with the other covariates held fixed and the random effects left out using `exclude`. This small function plots a prediction with an approximate 95% confidence interval, and adds the simulated effect as a dashed line.
+
+```{r}
+plot_effect <- function(x, pred, truth, xlab) {
+  lower <- invlogit(pred$fit - 2 * pred$se.fit)
+  upper <- invlogit(pred$fit + 2 * pred$se.fit)
+  plot(x, invlogit(pred$fit), type = "n", ylim = c(0.3, 0.9),
+       xlab = xlab, ylab = "Capture probability")
+  polygon(c(x, rev(x)), c(lower, rev(upper)), col = "grey85", border = NA)
+  lines(x, invlogit(pred$fit), lwd = 2)
+  lines(x, invlogit(truth), lty = 2, lwd = 2)
+}
+random_effects <- c("s(visitID)", "s(sampleID)")
+```
+
+The effect of day of the year, for fry on the first pass in 2013:
+
+```{r, fig.alt = "Estimated effect of day of the year on capture probability with a confidence band, and the simulated effect as a dashed line"}
+newdata <-
+  data.frame(
+    lifestage = "Fry", pass12 = "1",
+    fyear = factor(2013, levels = years),
+    fdoy = factor(days, levels = days)
+  )
+pred <- predict(m_final, newdata = newdata, se.fit = TRUE, exclude = random_effects)
+
+plot_effect(days, pred, truth = 0.3 + f_year(2013) + f_doy(days), xlab = "Day of year")
+rug(ef_sim$doy)
+legend("topright", c("Estimate", "Simulated"), lty = 1:2, lwd = 2, bty = "n")
+```
+
+The effect of year, for fry on the first pass on day 200:
+
+```{r, fig.alt = "Estimated effect of year on capture probability with a confidence band, and the simulated effect as a dashed line"}
+newdata <-
+  data.frame(
+    lifestage = "Fry", pass12 = "1",
+    fyear = factor(years, levels = years),
+    fdoy = factor(200, levels = days)
+  )
+pred <- predict(m_final, newdata = newdata, se.fit = TRUE, exclude = random_effects)
+
+plot_effect(years, pred, truth = 0.3 + f_year(years) + f_doy(200), xlab = "Year")
+legend("topright", c("Estimate", "Simulated"), lty = 1:2, lwd = 2, bty = "n")
+```
+
+Both smooths follow the simulated effects closely, and the simulated effects are almost always inside the confidence intervals.
+
+## First or second order?
+
+The two random walks for day of the year had similar AIC, but they give different curves. With a step for every day, the first order walk is much rougher.
+
+```{r, fig.alt = "Estimated effects of day of the year from first and second order random walks"}
+newdata <-
+  data.frame(
+    lifestage = "Fry", pass12 = "1",
+    fyear = factor(2013, levels = years),
+    fdoy = factor(days, levels = days)
+  )
+pred_rw1 <- predict(m_doy_rw1, newdata = newdata, exclude = random_effects)
+pred_rw2 <- predict(m_doy_rw2, newdata = newdata, exclude = random_effects)
+
+plot(days, invlogit(pred_rw2), type = "l", lwd = 2, ylim = c(0.3, 0.9),
+     xlab = "Day of year", ylab = "Capture probability")
+lines(days, invlogit(pred_rw1), col = "grey50", lwd = 2)
+legend("topright", c("Second order", "First order"),
+       col = c("black", "grey50"), lwd = 2, bty = "n")
+```
+
+A second order walk is usually the better choice when the walk has many small steps, as for day of the year. A first order walk is a good choice when there are few steps, as for year.
+
+## Other smooths
+
+Any other penalised smooth from `mgcv` can be used in the same way, for example `s(doy)` in place of the random walk. These are fitted in the same way, as random effects, but their penalties are not sparse, so they take longer to fit, particularly if the basis dimension `k` is large.

@@ -19,7 +19,7 @@ visits$area <- round(runif(nsite, 80, 250))[visits$siteID]
 ## ---- sim-effects
 # smooth effects on logit capture probability
 f_year <- function(year) 0.5 * sin(2 * pi * (year - 2006) / 12)
-f_doy <- function(doy) 0.6 - 1.2 / (1 + exp(-(doy - 215) / 15))
+f_doy <- function(doy) 0.9 * exp(-((doy - 200) / 35)^2) - 0.45
 
 ## ---- sim-samples
 # two samples per visit: fry and parr
