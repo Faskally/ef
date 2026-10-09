@@ -27,9 +27,9 @@
 
 \method{formula}{efp}(x, ...)
 
-summary.efp(object, ...)
+\method{summary}{efp}(object, ...)
 
-print.summary.efp(x, digits = max(3L, getOption("digits") - 3L), ...)
+\method{print}{summary.efp}(x, digits = max(3L, getOption("digits") - 3L), ...)
 
 \method{residuals}{efp}(object, ...)
 
@@ -39,7 +39,7 @@ print.summary.efp(x, digits = max(3L, getOption("digits") - 3L), ...)
 
 \method{model.matrix}{efp}(object, ...)
 
-print.efp(x, digits = max(3L, getOption("digits") - 3L), ...)
+\method{print}{efp}(x, digits = max(3L, getOption("digits") - 3L), ...)
 }
 \arguments{
 \item{object, x}{an efp fitted model}
@@ -80,8 +80,8 @@ available as \code{object$Vp}. Confidence intervals are Wald intervals
 based on this variance matrix.
 
 The log likelihood is the marginal log likelihood when the model
-contains random effects, and the degrees of freedom are the number of
-fixed effects plus the number of random effect standard deviations.
+contains random effects or penalised smooths, and the degrees of freedom
+are the number of fixed effects plus the number of standard deviations.
 
 Residuals, analysis of deviance tables and diagnostic plots are not
 available for efp fits, and the corresponding methods return an error.

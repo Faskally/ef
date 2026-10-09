@@ -21,8 +21,8 @@
 #' based on this variance matrix.
 #'
 #' The log likelihood is the marginal log likelihood when the model
-#' contains random effects, and the degrees of freedom are the number of
-#' fixed effects plus the number of random effect standard deviations.
+#' contains random effects or penalised smooths, and the degrees of freedom
+#' are the number of fixed effects plus the number of standard deviations.
 #'
 #' Residuals, analysis of deviance tables and diagnostic plots are not
 #' available for efp fits, and the corresponding methods return an error.
@@ -84,6 +84,7 @@ formula.efp <- function(x, ...) {
 }
 
 #' @rdname efp-methods
+#' @method summary efp
 #' @exportS3Method summary efp
 summary.efp <- function(object, ...) {
   out <- object[c("call", "formula", "aic", "df.null", "df.residual", "convergence")]
@@ -106,6 +107,7 @@ summary.efp <- function(object, ...) {
 }
 
 #' @rdname efp-methods
+#' @method print summary.efp
 #' @exportS3Method print summary.efp
 print.summary.efp <- function(x, digits = max(3L, getOption("digits") - 3L),  ...) {
 

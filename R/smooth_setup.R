@@ -206,7 +206,7 @@ smooth_setup <- function(Gsetup, formula, sparse = TRUE) {
     if (ncol(block$Xf)) {
       colnames(block$Xf) <- paste0(sm$label, ".null", seq_len(ncol(block$Xf)))
     }
-    if (length(block$keep) == length(cols)) {
+    if (is.null(block$Tint) && length(block$keep) == length(cols)) {
       colnames(block$Zu) <- Gsetup$term.names[cols]
     } else if (is_mrf[i] && !is.null(block$Tint)) {
       colnames(block$Zu) <- paste0(sm$label, ".", rownames(sm$xt$penalty)[block$keep])

@@ -6,6 +6,15 @@
 * remove `overdispersion()` and `BICadj()`, these are replaced by visit and
   sample random effects
 * remove the `sample_re` argument of `efp()`
+* smooth terms are now penalised and the amount of smoothing is estimated,
+  by fitting smooths as random effects. Previously smooths were unpenalised
+  regression splines, which are still available using `fx = TRUE`, for
+  example `s(x, k = 3, fx = TRUE)`
+* the recommended smooths are first and second order random walks, using
+  `s(f, bs = "mrf", xt = list(penalty = rw_penalty(levels(f))))`. The new
+  function `rw_penalty()` creates the penalty, and these are fitted using
+  sparse matrices so they are quick to fit even with many levels. Other
+  smooths from `mgcv` can be used but are slower to fit
 * add a `predict()` method for `efp` fits, with predictions for new data,
   standard errors and the option to exclude random effects
 * `fitted(type = "pi")` now returns the probability of capture in each pass

@@ -15,7 +15,8 @@ including any for which there are no data.}
 }
 \value{
 a square matrix with one row and column for each level, with the
-levels as dimnames
+levels as dimnames. The matrix has an attribute, \code{null.space},
+which is a basis for the functions which are not penalised.
 }
 \description{
 Creates a first or second order random walk penalty matrix for the levels

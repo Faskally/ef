@@ -46,7 +46,9 @@ the data used to fit the model or for new data.
 }
 \details{
 Predictions are conditional on the estimated random effects, unless these
-are removed using \code{exclude}. Standard errors on the response scale are
+are removed using \code{exclude}. For a random walk smooth, predictions can
+be made for any level in the penalty, including levels with no data, which
+are interpolated. Standard errors on the response scale are
 calculated using the delta method.
 
 The \code{offset} supplied to \code{\link{efp}} is included in the

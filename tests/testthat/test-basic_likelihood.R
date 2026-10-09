@@ -294,7 +294,7 @@ test_that("pass probabilities", {
   expect_equal(fitted(m, type = "both"), list(p = p, pi = fitted(m, type = "pi")))
 })
 
-test_that("smooth terms", {
+test_that("unpenalised smooth terms", {
   data(ef_data)
   ef_data$sampleID <-
     factor(paste(
@@ -304,7 +304,7 @@ test_that("smooth terms", {
   m0 <- efp(count ~ lifestage,
     data = ef_data, pass = pass, id = sampleID
   )
-  m1 <- efp(count ~ lifestage + s(doy, k = 3),
+  m1 <- efp(count ~ lifestage + s(doy, k = 3, fx = TRUE),
     data = ef_data, pass = pass, id = sampleID
   )
 

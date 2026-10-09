@@ -1,0 +1,28 @@
+url: https://faskally.github.io/ef/
+
+template:
+  bootstrap: 5
+  math-rendering: katex
+
+reference:
+- title: Fitting models
+  desc: Estimate capture probability from multipass electrofishing data.
+  contents:
+  - efp
+  - rw_penalty
+- title: Predictions and summaries
+  contents:
+  - predict.efp
+  - efp-methods
+  - as.gam
+- title: Utilities
+  contents:
+  - logit
+  - invlogit
+  - transpar
+- title: Data
+  contents:
+  - ef_data
+- title: Package
+  contents:
+  - ef-package

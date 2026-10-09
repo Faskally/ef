@@ -20,3 +20,6 @@ ef.Rproj
 debug.log
 
 src/tmp.def
+
+# pkgdown site
+docs

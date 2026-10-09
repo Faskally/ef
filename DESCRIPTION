@@ -13,11 +13,11 @@ Authors@R:
 Description: Estimates capture probabilities and densities from multipass
   removal (electrofishing) data, following Millar et al. (2016)
   <doi:10.1016/j.fishres.2016.01.001>. Capture probability is modelled on
-  the logit scale using fixed effects, unpenalised smooth terms and random
+  the logit scale using fixed effects, penalised smooth terms and random
   effects, for example for between visit and between sample variation. The
   likelihood is computed using 'RTMB', with random effects integrated out
   using the Laplace approximation.
-URL: https://github.com/Faskally/ef
+URL: https://faskally.github.io/ef/, https://github.com/Faskally/ef
 BugReports: https://github.com/Faskally/ef/issues
 Depends: R (>= 4.1.0)
 Imports: Matrix, RTMB, methods, mgcv

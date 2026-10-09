@@ -14,9 +14,9 @@ an object of class \code{gam}, see \code{\link[mgcv]{gamObject}}
 }
 \description{
 Converts an efp fit to a gam object, so that the plotting and prediction
-tools in the \code{mgcv} package can be used. Smoothing parameter
-estimates in the gam object are not meaningful, as efp fits are
-unpenalised.
+tools in the \code{mgcv} package can be used. The coefficients and their
+variances are those estimated by \code{efp}, but the smoothing parameters
+and effective degrees of freedom in the gam object are not.
 }
 \examples{
 data(ef_data)

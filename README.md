@@ -90,12 +90,10 @@ ef_data$fyear <- factor(ef_data$year)
 # Fit a Model
 
 Fit a simple model. This contains a factor for pass (2 levels),
-lifestage (2 levels), site (3 levels) and year (5 levels). With a larger
-dataset it would also be possible to add continuous variables as linear
-or smoothed terms providing the degrees of freedom are specified
-(typically up to k=3 (2 d.f.), see [Millar *et al*.,
-2016](https://doi.org/10.1016/j.fishres.2016.01.001) for further
-details)
+lifestage (2 levels), site (3 levels) and year (5 levels). Continuous
+variables can be added as linear or smooth terms, see below and [Millar
+*et al*., 2016](https://doi.org/10.1016/j.fishres.2016.01.001) for
+further details.
 
 ``` r
 m1 <-
@@ -132,67 +130,86 @@ m1 <-
 
 # Smooth Terms
 
-Continuous covariates can be included as smooth terms using `s()`. The
-smooths are unpenalised regression splines, no smoothing parameters are
-estimated, so the flexibility of a smooth is set by its basis dimension
-`k`, which should be kept small. Here the year factor is replaced by a
-smooth effect of the day of the year (`doy`) with 2 degrees of freedom
-(`k = 3`).
+Smooth terms are penalised, and the amount of smoothing is estimated. A
+smooth is fitted as a random effect: the part of the smooth that is not
+penalised is a fixed effect, and the standard deviation of the random
+part controls how smooth the term is.
+
+The recommended smooths are first and second order random walks. These
+use the Markov random field (`mrf`) basis from `mgcv` with a penalty
+created by `rw_penalty()`. Both the basis and the penalty are sparse, so
+these models are quick to fit even when the walk has many steps.
+
+- a first order random walk (`order = 1`) penalises the differences
+  between neighbouring levels and shrinks towards a constant
+- a second order random walk (`order = 2`) penalises the second
+  differences and shrinks towards a linear trend
+
+The covariate must be a factor whose levels are the steps of the walk,
+in order. Here the year factor is replaced by a first order random walk
+over years.
 
 ``` r
+rw1 <- rw_penalty(levels(ef_data$fyear), order = 1)
+
 m1_smooth <-
   efp(
-    count ~ siteID + s(doy, k = 3) + pass12 + lifestage,
+    count ~ siteID + s(fyear, bs = "mrf", xt = list(penalty = rw1)) +
+      pass12 + lifestage,
     data = ef_data, pass = pass, id = sampleID
   )
 ```
 
     ## 
     ## Call:
-    ## efp(formula = count ~ siteID + s(doy, k = 3) + pass12 + lifestage, 
-    ##     data = ef_data, pass = pass, id = sampleID)
+    ## efp(formula = count ~ siteID + s(fyear, bs = "mrf", xt = list(penalty = rw1)) + 
+    ##     pass12 + lifestage, data = ef_data, pass = pass, id = sampleID)
     ## 
     ## Formula:
-    ## count ~ siteID + s(doy, k = 3) + pass12 + lifestage
+    ## count ~ siteID + s(fyear, bs = "mrf", xt = list(penalty = rw1)) + 
+    ##     pass12 + lifestage
     ## 
-    ## No random effects
+    ## Random effects:
+    ##                Estimate Std. Error
+    ## sigma s(fyear)    0.192     0.1239
     ## 
     ## Coefficients:
-    ##                 Estimate Std. Error   z value Pr(>|z^2|)
-    ## (Intercept)    0.7285785    0.12931  5.634345  1.757e-08
-    ## siteIDSite2   -0.0003248    0.14606 -0.002224  9.982e-01
-    ## siteIDSite3   -0.1597720    0.16543 -0.965815  3.341e-01
-    ## pass122       -0.2543622    0.13085 -1.943889  5.191e-02
-    ## lifestageParr  0.6109669    0.11672  5.234495  1.654e-07
-    ## s(doy).1       0.0304943    0.27119  0.112446  9.105e-01
-    ## s(doy).2      -0.1036990    0.07735 -1.340576  1.801e-01
+    ##               Estimate Std. Error z value Pr(>|z^2|)
+    ## (Intercept)    0.59939     0.1565  3.8304  1.279e-04
+    ## siteIDSite2    0.08302     0.1345  0.6171  5.371e-01
+    ## siteIDSite3   -0.02424     0.1466 -0.1653  8.687e-01
+    ## pass122       -0.24364     0.1309 -1.8614  6.269e-02
+    ## lifestageParr  0.59448     0.1160  5.1239  2.993e-07
     ## 
-    ## Degrees of Freedom: 90 Total (i.e. Null);  83 Residual
-    ## AIC: 3196
+    ## Degrees of Freedom: 90 Total (i.e. Null);  84 Residual
+    ## AIC: 3193
 
-The smooth effect of day of the year on capture probability, here for
-the first pass for fry at Site1, with approximate 95% confidence
-intervals. The rug shows the days on which the sites were fished.
+The standard deviation, `sigma s(fyear)`, is that of the steps of the
+random walk on the logit scale. The starting value of the walk is a
+fixed effect, so the intercept is for the first year.
+
+The smooth effect of year on capture probability, here for the first
+pass for fry at Site1, with approximate 95% confidence intervals
 
 ``` r
 newdata <-
   data.frame(
     siteID = "Site1", pass12 = "1", lifestage = "Fry",
-    doy = seq(min(ef_data$doy), max(ef_data$doy), length = 50)
+    fyear = factor(levels(ef_data$fyear), levels = levels(ef_data$fyear))
   )
 pred <- predict(m1_smooth, newdata = newdata, se.fit = TRUE)
+year <- as.numeric(levels(ef_data$fyear))
 
-plot(newdata$doy, invlogit(pred$fit), type = "l", ylim = c(0, 1),
-     xlab = "Day of year", ylab = "Capture probability")
-lines(newdata$doy, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
-lines(newdata$doy, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
-rug(ef_data$doy)
+plot(year, invlogit(pred$fit), type = "b", pch = 16, ylim = c(0, 1),
+     xlab = "Year", ylab = "Capture probability")
+lines(year, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
+lines(year, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
 ```
 
-![](README_files/figure-gfm/smooth-doy-1.png)<!-- -->
+<img src="man/figures/README-smooth-year-1.png" alt="Line plot of capture probability by year from a first order random walk, with 95% confidence intervals"  />
 
-The models with a year factor and a smooth effect of day of the year can
-be compared using AIC
+The models with a year factor and a random walk over years can be
+compared using AIC
 
 ``` r
 AIC(m1, m1_smooth)
@@ -200,7 +217,78 @@ AIC(m1, m1_smooth)
 
     ##           df      AIC
     ## m1         9 3188.305
-    ## m1_smooth  7 3195.511
+    ## m1_smooth  6 3192.599
+
+A random walk can have steps with no data, for example a walk over every
+day of the year when sites were only fished on some of them. All the
+steps are included in the penalty, and the factor is given the same
+levels. Here a second order random walk is used for day of the year
+(`doy`).
+
+``` r
+days <- min(ef_data$doy):max(ef_data$doy)
+ef_data$fdoy <- factor(ef_data$doy, levels = days)
+rw2 <- rw_penalty(days, order = 2)
+
+m1_doy <-
+  efp(
+    count ~ siteID + s(fdoy, bs = "mrf", xt = list(penalty = rw2)) +
+      pass12 + lifestage,
+    data = ef_data, pass = pass, id = sampleID
+  )
+```
+
+    ## 
+    ## Call:
+    ## efp(formula = count ~ siteID + s(fdoy, bs = "mrf", xt = list(penalty = rw2)) + 
+    ##     pass12 + lifestage, data = ef_data, pass = pass, id = sampleID)
+    ## 
+    ## Formula:
+    ## count ~ siteID + s(fdoy, bs = "mrf", xt = list(penalty = rw2)) + 
+    ##     pass12 + lifestage
+    ## 
+    ## Random effects:
+    ##                Estimate Std. Error
+    ## sigma s(fdoy) 3.937e-05   0.001866
+    ## 
+    ## Coefficients:
+    ##                Estimate Std. Error  z value Pr(>|z^2|)
+    ## (Intercept)    0.678300     0.1178  5.75842  8.491e-09
+    ## siteIDSite2    0.001903     0.1448  0.01314  9.895e-01
+    ## siteIDSite3   -0.158737     0.1653 -0.96058  3.368e-01
+    ## pass122       -0.254290     0.1308 -1.94349  5.196e-02
+    ## lifestageParr  0.607910     0.1135  5.35677  8.472e-08
+    ## s(fdoy).null1 -0.550210     0.3837 -1.43391  1.516e-01
+    ## 
+    ## Degrees of Freedom: 90 Total (i.e. Null);  83 Residual
+    ## AIC: 3196
+
+In this case the standard deviation is very close to zero, so the smooth
+has been shrunk to its unpenalised part, a linear trend in day of the
+year (the fixed effect `s(fdoy).null1`).
+
+``` r
+newdata <-
+  data.frame(
+    siteID = "Site1", pass12 = "1", lifestage = "Fry",
+    fdoy = factor(days, levels = days)
+  )
+pred <- predict(m1_doy, newdata = newdata, se.fit = TRUE)
+
+plot(days, invlogit(pred$fit), type = "l", ylim = c(0, 1),
+     xlab = "Day of year", ylab = "Capture probability")
+lines(days, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
+lines(days, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
+rug(ef_data$doy)
+```
+
+<img src="man/figures/README-smooth-doy-1.png" alt="Line plot of capture probability by day of the year from a second order random walk, with 95% confidence intervals"  />
+
+Any other penalised smooth from `mgcv` can be used, for example `s(doy)`
+or `te(doy, area)`, but their penalties are not sparse so they take
+longer to fit. An unpenalised regression spline, whose flexibility is
+set by its basis dimension `k`, can be fitted using `fx = TRUE`, for
+example `s(doy, k = 3, fx = TRUE)`.
 
 # Get Predicted Values for *P*
 
@@ -281,7 +369,7 @@ densdata $ offset <- log(densdata $ area * densdata $ prob)
 
 Plot to check
 
-![](README_files/figure-gfm/density-1.png)<!-- -->
+<img src="man/figures/README-density-1.png" alt="Estimated fish density by year for fry and parr at each site"  />
 
 # Comparing Models
 
