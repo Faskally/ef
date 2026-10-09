@@ -1,32 +1,21 @@
+## Update
+
+This is an update of ef from version 1.2.0 to 2.0.0.
+
+* The likelihood is now computed using 'RTMB', so the package no longer
+  contains compiled code and no longer links to 'TMB' and 'RcppEigen'.
+* `overdispersion()` and `BICadj()` have been removed, along with the
+  `sample_re` and `init` arguments of `efp()`. They are replaced by random
+  effects specified in the model formula, see NEWS.md.
+
 ## Test environments
-* local R installation, R 4.0.2
-* ubuntu 16.04 (on travis-ci), R 4.0.2
-* win-builder (devel)
+
+* local: Ubuntu 24.04, R 4.5.3
 
 ## R CMD check results
 
-0 errors | 0 warnings | 2 notes
+0 errors | 0 warnings | 0 notes
 
-* checking installed package size ... NOTE
-    installed size is 19.5Mb
-    sub-directories of 1Mb or more:
-      libs  19.4Mb
+## Reverse dependencies
 
-* checking CRAN incoming feasibility ... NOTE
-Maintainer: 'Colin Millar <colin.millar@ices.dk>'
-
-New submission
-
-Possibly mis-spelled words in DESCRIPTION:
-  Salmonid (2:50)
-  multipass (14:18)
-
-
-## comments
-
-* Marine Scotland Science has been added to the author list in
-the DESCRIPTION file as the copywrote holder
-
-* The TItle of the package has been reduced in size
-
-* all examples are run now
+There are no reverse dependencies on CRAN.

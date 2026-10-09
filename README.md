@@ -2,8 +2,7 @@ Modelling Capture Probability
 ================
 9 October 2026
 
-[![Build
-Status](https://travis-ci.org/Faskally/ef.svg?branch=tmb)](https://travis-ci.org/Faskally/ef)
+[![R-CMD-check](https://github.com/Faskally/ef/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Faskally/ef/actions/workflows/R-CMD-check.yaml)
 
 ## the model
 
@@ -56,8 +55,7 @@ remotes::install_github("faskally/ef")
 Create a factor for pass with separate levels for the first and
 subsequent passes. NOTE: Assuming the second and third pass have the
 same capture probability avoids problems with model identifiability
-([Millar *et al*.,
-2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017))
+([Millar *et al*., 2016](https://doi.org/10.1016/j.fishres.2016.01.001))
 
 ``` r
 ef_data$pass12 <- factor(replace(ef_data$pass, ef_data$pass > 2, 2))
@@ -96,8 +94,8 @@ lifestage (2 levels), site (3 levels) and year (5 levels). With a larger
 dataset it would also be possible to add continuous variables as linear
 or smoothed terms providing the degrees of freedom are specified
 (typically up to k=3 (2 d.f.), see [Millar *et al*.,
-2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017)
-for further details)
+2016](https://doi.org/10.1016/j.fishres.2016.01.001) for further
+details)
 
 ``` r
 m1 <-
@@ -233,7 +231,7 @@ probs <- cast(ef_data, formula = sampleID ~ pass, value = "prob")
 ```
 
 Get cumulative capture probability by sampleID (see [Glover *et al*.,
-2018](https://www.sciencedirect.com/science/article/pii/S1470160X18303534))
+2018](https://doi.org/10.1016/j.ecolind.2018.05.013))
 
 ``` r
 probs $ prob <- apply(probs[,2:4], 1, function(x) 1 - prod(1-x))

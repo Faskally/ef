@@ -6,7 +6,7 @@ output:
     html_preview: false
 ---
 
-[![Build Status](https://travis-ci.org/Faskally/ef.svg?branch=tmb)](https://travis-ci.org/Faskally/ef)
+[![R-CMD-check](https://github.com/Faskally/ef/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Faskally/ef/actions/workflows/R-CMD-check.yaml)
 
 ## the model
 
@@ -51,7 +51,7 @@ data(ef_data)
 # Create Required Fields for Analysis
 
 
-Create a factor for pass with separate levels for the first and subsequent passes. NOTE: Assuming the second and third pass have the same capture probability avoids problems with model identifiability ([Millar _et al_., 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017))
+Create a factor for pass with separate levels for the first and subsequent passes. NOTE: Assuming the second and third pass have the same capture probability avoids problems with model identifiability ([Millar _et al_., 2016](https://doi.org/10.1016/j.fishres.2016.01.001))
 
 ```{r}
 ef_data$pass12 <- factor(replace(ef_data$pass, ef_data$pass > 2, 2))
@@ -82,7 +82,7 @@ ef_data$fyear <- factor(ef_data$year)
 # Fit a Model
 
 
-Fit a simple model. This contains a factor for pass (2 levels), lifestage (2 levels), site (3 levels) and year (5 levels). With a larger dataset it would also be possible to add continuous variables as linear or smoothed terms providing the degrees of freedom are specified (typically up to k=3 (2 d.f.), see [Millar _et al_., 2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017) for further details)
+Fit a simple model. This contains a factor for pass (2 levels), lifestage (2 levels), site (3 levels) and year (5 levels). With a larger dataset it would also be possible to add continuous variables as linear or smoothed terms providing the degrees of freedom are specified (typically up to k=3 (2 d.f.), see [Millar _et al_., 2016](https://doi.org/10.1016/j.fishres.2016.01.001) for further details)
 
 ```{r results = 'hide', warning = FALSE, message = FALSE}
 m1 <-
@@ -164,7 +164,7 @@ Reshape to get capture probability by species x lifestage x site visit x pass. T
 probs <- cast(ef_data, formula = sampleID ~ pass, value = "prob")
 ```
 
-Get cumulative capture probability by sampleID (see [Glover _et al_., 2018](https://www.sciencedirect.com/science/article/pii/S1470160X18303534))
+Get cumulative capture probability by sampleID (see [Glover _et al_., 2018](https://doi.org/10.1016/j.ecolind.2018.05.013))
 
 ```{r}
 probs $ prob <- apply(probs[,2:4], 1, function(x) 1 - prod(1-x))

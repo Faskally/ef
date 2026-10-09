@@ -5,10 +5,10 @@
 #'
 #' @format A data frame with 90 rows and 9 variables:
 #' \describe{
-#'   \item{siteID}{Unique identifier for each elecrofishing site}
+#'   \item{siteID}{Unique identifier for each electrofishing site}
 #'   \item{year}{year of data collection}
 #'   \item{date}{date of data collections}
-#'   \item{EFpasscount:}{the total number of electrofishing passes}
+#'   \item{EFpasscount}{the total number of electrofishing passes}
 #'   \item{pass}{the electrofishing pass on which the fish were caught}
 #'   \item{species}{fish species, Salmon}
 #'   \item{lifestage}{fish lifestage, Fry or Parr}
@@ -16,5 +16,5 @@
 #'   \item{area}{the area of river fished}
 #' }
 #'
-#' @source \url{https://www2.gov.scot/Topics/marine/Salmon-Trout-Coarse/Freshwater/Monitoring/temperature}
+#' @source \url{https://www.gov.scot/publications/scotland-river-temperature-monitoring-network-srtmn/}
 "ef_data"

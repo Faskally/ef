@@ -334,3 +334,60 @@ test_that("smooth terms", {
   expect_true(all(pred$fit > 0 & pred$fit < 1))
   expect_true(all(pred$se.fit > 0))
 })
+
+test_that("methods", {
+  data(ef_data)
+  ef_data$sampleID <-
+    factor(paste(
+      ef_data$date, ef_data$siteID,
+      ef_data$lifestage, ef_data$species
+    ))
+  ef_data$visitID <- factor(paste(ef_data$date, ef_data$siteID))
+
+  m1 <- efp(count ~ lifestage,
+    data = ef_data, pass = pass, id = sampleID
+  )
+  m2 <- efp(count ~ lifestage + s(visitID, bs = "re"),
+    data = ef_data, pass = pass, id = sampleID
+  )
+
+  expect_equal(vcov(m1), m1$Vb)
+  expect_equal(vcov(m2), m2$Vb)
+  expect_equal(formula(m2), count ~ lifestage + s(visitID, bs = "re"))
+
+  # Wald confidence intervals
+  ci <- confint(m2)
+  expect_equal(rownames(ci), names(coef(m2)))
+  expect_equal(
+    unname(ci[, 2] - ci[, 1]),
+    unname(2 * qnorm(0.975) * sqrt(diag(vcov(m2))))
+  )
+
+  expect_equal(attr(logLik(m1), "df"), 2)
+  expect_equal(attr(logLik(m2), "df"), 3)
+  expect_equal(nobs(m2), nrow(ef_data))
+  expect_equal(BIC(m2), -2 * m2$llik + log(nrow(ef_data)) * 3)
+
+  s1 <- summary(m1)
+  s2 <- summary(m2)
+  expect_s3_class(s2, "summary.efp")
+  expect_equal(unname(s2$coefficients[, "Estimate"]), unname(coef(m2)))
+  expect_equal(
+    unname(s2$coefficients[, "Std. Error"]),
+    unname(sqrt(diag(vcov(m2)))),
+    tolerance = 1e-6
+  )
+  expect_null(s1$sigma)
+  expect_equal(unname(s2$sigma[, "Estimate"]), unname(m2$sigma))
+  expect_output(print(s1), "No random effects")
+  expect_output(print(s2), "sigma s\\(visitID\\)")
+
+  expect_error(residuals(m1), "not available")
+  expect_error(anova(m1), "not available")
+  expect_error(plot(m1), "not available")
+
+  m3 <- efp(count ~ lifestage,
+    data = ef_data, pass = pass, id = sampleID, hessian = FALSE
+  )
+  expect_error(vcov(m3), "hessian = TRUE")
+})

@@ -1,4 +1,4 @@
-#' Estimate capture probabilites from electrofishing data
+#' Estimate capture probabilities from electrofishing data
 #'
 #' This function uses the marginal likelihood of capture probabilities
 #' to estimate model parameters
@@ -6,16 +6,30 @@
 #'
 #' @param formula a formula object. Random effects are specified using
 #'   \code{s(f, bs = "re")} terms, where \code{f} is a factor, see Details.
-#' @param data a data.frame containing all relavent info
+#' @param data a data.frame containing all relevant info
 #' @param pass a vector of integers giving the pass number of the observation
 #' @param id a vector of integers identifying an observation (a set of electrofishing passes)
-#' @param offset an possible offset for the linear predictor of capture probability
+#' @param offset an optional offset for the linear predictor of capture probability
 #' @param verbose if TRUE optimiser messages are printed to the screen
-#' @param init should initialisatiom be random?
 #' @param hessian if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb
 #' @param fit if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned
-#' @param control a list of control commands to be passed to optim
-#' @return glm type object
+#' @param control a list of control commands to be passed to \code{\link[stats]{optim}}
+#' @return If \code{fit = TRUE}, an object of class \code{efp}, a list which
+#'   inherits from \code{glm}, containing among other things the fixed effect
+#'   estimates (\code{coefficients}), the random effect estimates
+#'   (\code{random}), the random effect standard deviations (\code{sigma}),
+#'   the fitted capture probabilities (\code{fitted}), the log likelihood
+#'   (\code{llik}) and the variance matrix of the fixed effects (\code{Vb}).
+#'   See \code{\link{efp-methods}} for the methods available. If
+#'   \code{fit = FALSE}, a list containing the data that would be passed to
+#'   the optimiser.
+#'
+#' @references
+#' Millar, C. P., Fryer, R. J., Millidine, K. J. and Malcolm, I. A. (2016)
+#' Modelling capture probability of Atlantic salmon (Salmo salar) from a
+#' diverse national electrofishing dataset: Implications for the estimation
+#' of abundance. Fisheries Research, 177, 1-12.
+#' \doi{10.1016/j.fishres.2016.01.001}
 #'
 #' @details
 #' Random effects on the logit capture probability are included by adding
@@ -112,7 +126,7 @@
 #'
 #' @export
 efp <- function(formula, data = NULL, pass = pass, id = id,
-  offset = NULL, verbose = FALSE, init = "0", hessian = TRUE,
+  offset = NULL, verbose = FALSE, hessian = TRUE,
   fit = TRUE, control = list()) {
 
   # some checks
@@ -199,14 +213,6 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
       silent = !verbose
     )
 
-#  if (verbose) {
-#    control = list(trace = 1)
-#  } else {
-#    control = list()
-#  }
-
-  #opt <- nlminb(obj$par, obj$fn, obj$gr, control = control)
-  
   opt <- optim(obj$par, obj$fn, obj$gr, method = "BFGS", control = control)
   
   # check convergence

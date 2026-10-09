@@ -1,13 +1,14 @@
 ^dev$
-^.travis.yml$
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^README.md$
 ^README.Rmd$
-^.travis.yml$
 ^worksheet.R$
 ^debug.log$
 ^ef.code-workspace$
 ^README_files$
 ^CRAN-RELEASE$
+^CRAN-SUBMISSION$
 ^cran-comments\.md$
+^\.github$
+^\.vscode$

@@ -16,3 +16,6 @@ vector of values between -Inf and Inf
 This function transforms values on the probability scale to values on
 the logistic scale.
 }
+\examples{
+logit(c(0.1, 0.5, 0.9))
+}

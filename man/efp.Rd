@@ -2,7 +2,7 @@
 % Please edit documentation in R/efp.R
 \name{efp}
 \alias{efp}
-\title{Estimate capture probabilites from electrofishing data}
+\title{Estimate capture probabilities from electrofishing data}
 \usage{
 efp(
   formula,
@@ -11,7 +11,6 @@ efp(
   id = id,
   offset = NULL,
   verbose = FALSE,
-  init = "0",
   hessian = TRUE,
   fit = TRUE,
   control = list()
@@ -21,26 +20,32 @@ efp(
 \item{formula}{a formula object. Random effects are specified using
 \code{s(f, bs = "re")} terms, where \code{f} is a factor, see Details.}
 
-\item{data}{a data.frame containing all relavent info}
+\item{data}{a data.frame containing all relevant info}
 
 \item{pass}{a vector of integers giving the pass number of the observation}
 
 \item{id}{a vector of integers identifying an observation (a set of electrofishing passes)}
 
-\item{offset}{an possible offset for the linear predictor of capture probability}
+\item{offset}{an optional offset for the linear predictor of capture probability}
 
 \item{verbose}{if TRUE optimiser messages are printed to the screen}
-
-\item{init}{should initialisatiom be random?}
 
 \item{hessian}{if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb}
 
 \item{fit}{if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned}
 
-\item{control}{a list of control commands to be passed to optim}
+\item{control}{a list of control commands to be passed to \code{\link[stats]{optim}}}
 }
 \value{
-glm type object
+If \code{fit = TRUE}, an object of class \code{efp}, a list which
+inherits from \code{glm}, containing among other things the fixed effect
+estimates (\code{coefficients}), the random effect estimates
+(\code{random}), the random effect standard deviations (\code{sigma}),
+the fitted capture probabilities (\code{fitted}), the log likelihood
+(\code{llik}) and the variance matrix of the fixed effects (\code{Vb}).
+See \code{\link{efp-methods}} for the methods available. If
+\code{fit = FALSE}, a list containing the data that would be passed to
+the optimiser.
 }
 \description{
 This function uses the marginal likelihood of capture probabilities
@@ -131,4 +136,11 @@ newdata <- data.frame(siteID = "Site1", pass12 = "1", lifestage = "Fry",
 pred <- predict(m5, newdata = newdata, type = "response", se.fit = TRUE)
 cbind(newdata, fit = pred$fit, se = pred$se.fit)
 
+}
+\references{
+Millar, C. P., Fryer, R. J., Millidine, K. J. and Malcolm, I. A. (2016)
+Modelling capture probability of Atlantic salmon (Salmo salar) from a
+diverse national electrofishing dataset: Implications for the estimation
+of abundance. Fisheries Research, 177, 1-12.
+\doi{10.1016/j.fishres.2016.01.001}
 }
