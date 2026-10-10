@@ -58,7 +58,6 @@ test_that("random walk likelihood", {
     # the penalty is sparse
     expect_s4_class(efdat$blocks[[1]]$S[[1]], "sparseMatrix")
     expect_lte(length(efdat$blocks[[1]]$S[[1]]@x), (2 * order + 1) * 12)
-    expect_equal(efdat$blocks[[1]]$logdet, 0)
 
     k <- ncol(efdat$Z)
     L <- 1 * lower.tri(diag(k), diag = TRUE)

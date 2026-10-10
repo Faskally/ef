@@ -283,7 +283,7 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
       X = as(as(X[, fx_keep, drop = FALSE], "generalMatrix"), "TsparseMatrix"),
       Z = as(as(Z, "generalMatrix"), "TsparseMatrix"),
       re_id = as.integer(unlist(lapply(blocks, function(x) rep(x$sig[1], length(x$idx))))),
-      blocks = lapply(blocks, function(x) x[c("idx", "sig", "S", "logdet")])
+      blocks = lapply(blocks, function(x) x[c("idx", "sig", "S")])
     )
 
   if (!fit) {

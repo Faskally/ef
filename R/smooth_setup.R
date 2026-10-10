@@ -80,9 +80,6 @@ smooth_block <- function(X, S, centred = FALSE, N = NULL) {
     # independent random effects
     out$S <- NULL
   } else {
-    if (length(S) == 1) {
-      out$logdet <- as.numeric(determinant(S[[1]], logarithm = TRUE)$modulus)
-    }
     out$S <- lapply(S, function(s) as(s, "generalMatrix"))
   }
   out$npen <- length(S)
