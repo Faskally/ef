@@ -17,6 +17,8 @@ Imports: Matrix, dplyr, methods, mgcv
 LinkingTo: TMB, RcppEigen
 Suggests: testthat
 License: MIT + file LICENSE
+URL: https://faskally.github.io/ef/, https://github.com/Faskally/ef
+BugReports: https://github.com/Faskally/ef/issues
 LazyData: TRUE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

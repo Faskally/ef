@@ -20,3 +20,9 @@ ef.Rproj
 debug.log
 
 src/tmp.def
+
+# compiled code and pkgdown output
+src/*.o
+src/*.so
+src/*.dll
+docs
