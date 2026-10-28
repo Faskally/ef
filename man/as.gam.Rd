@@ -2,7 +2,7 @@
 % Please edit documentation in R/as.gam.R
 \name{as.gam}
 \alias{as.gam}
-\title{Conversion of an efp fit to a gam fit for plotting}
+\title{Coversion of an efp fit to a gam fit for plotting}
 \usage{
 as.gam(object)
 }
@@ -10,27 +10,8 @@ as.gam(object)
 \item{object}{an efp fitted model}
 }
 \value{
-an object of class \code{gam}, see \code{\link[mgcv]{gamObject}}
+gam type object
 }
 \description{
-Converts an efp fit to a gam object, so that the plotting and prediction
-tools in the \code{mgcv} package can be used. The coefficients and their
-variances are those estimated by \code{efp}, but the smoothing parameters
-and effective degrees of freedom in the gam object are not.
-}
-\details{
-The conversion fits a model using \code{mgcv}, which can take a very
-long time if the model has many random effects. Predictions do not need
-the conversion, see \code{\link{predict.efp}}.
-}
-\examples{
-data(ef_data)
-ef_data$sampleID <- factor(paste(ef_data$date, ef_data$siteID,
-                                 ef_data$lifestage, ef_data$species))
-m1 <- efp(count ~ lifestage + s(doy, k = 3),
-          data = ef_data, pass = pass, id = sampleID)
-
-m1_gam <- as.gam(m1)
-plot(m1_gam)
-
+Coversion of an efp fit to a gam fit for plotting
 }

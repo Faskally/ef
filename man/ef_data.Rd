@@ -5,14 +5,12 @@
 \alias{ef_data}
 \title{Counts of salmon fry and parr from electrofishing.}
 \format{
-A data frame with 90 rows and 10 variables:
+A data frame with 90 rows and 9 variables:
 \describe{
-\item{siteID}{Unique identifier for each electrofishing site}
+\item{siteID}{Unique identifier for each elecrofishing site}
 \item{year}{year of data collection}
 \item{date}{date of data collections}
-\item{doy}{day of the year of data collection, a continuous covariate
-which can be used to fit smooth terms}
-\item{EFpasscount}{the total number of electrofishing passes}
+\item{EFpasscount:}{the total number of electrofishing passes}
 \item{pass}{the electrofishing pass on which the fish were caught}
 \item{species}{fish species, Salmon}
 \item{lifestage}{fish lifestage, Fry or Parr}
@@ -21,7 +19,7 @@ which can be used to fit smooth terms}
 }
 }
 \source{
-\url{https://www.gov.scot/publications/scotland-river-temperature-monitoring-network-srtmn/}
+\url{https://www2.gov.scot/Topics/marine/Salmon-Trout-Coarse/Freshwater/Monitoring/temperature}
 }
 \usage{
 ef_data

@@ -1,7 +1,7 @@
 Package: ef
 Title: Modelling Framework for the Estimation of Salmonid Abundance
-Version: 2.0.0
-Date: 2026-10-09
+Version: 1.2.1
+Date: 2026-10-28
 Authors@R:
   c(
     person("Colin", "Millar", role = c("aut", "cre"),
@@ -10,20 +10,14 @@ Authors@R:
     person("Iain", "Malcolm", role = "aut"),
     person("Ross", "Glover", role = "aut"),
     person("Marine Scotland Science", role = "cph"))
-Description: Estimates capture probabilities and densities from multipass
-  removal (electrofishing) data, following Millar et al. (2016)
-  <doi:10.1016/j.fishres.2016.01.001>. Capture probability is modelled on
-  the logit scale using fixed effects, penalised smooth terms and random
-  effects, for example for between visit and between sample variation. The
-  likelihood is computed using 'RTMB', with random effects integrated out
-  using the Laplace approximation.
-URL: https://faskally.github.io/ef/, https://github.com/Faskally/ef
-BugReports: https://github.com/Faskally/ef/issues
-Depends: R (>= 4.1.0)
-Imports: Matrix, RTMB, methods, mgcv
-Suggests: testthat (>= 3.0.0)
+Description: A set of functions to estimate capture probabilities and
+  densities from multipass pass removal data.
+Depends: R (>= 3.0), TMB
+Imports: Matrix, dplyr, methods, mgcv
+LinkingTo: TMB, RcppEigen
+Suggests: testthat
 License: MIT + file LICENSE
 LazyData: TRUE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
+RoxygenNote: 7.2.3

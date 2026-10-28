@@ -1,50 +1,13 @@
 Modelling Capture Probability
 ================
-9 October 2026
+26 August 2020
 
-[![R-CMD-check](https://github.com/Faskally/ef/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Faskally/ef/actions/workflows/R-CMD-check.yaml)
-
-## the model
-
-For a sample $s$ (a unique combination of site visit, species and
-lifestage) fished with $n_s$ passes, let $y_{si}$ be the number of fish
-caught on pass $i$ and $p_{si}$ the capture probability on that pass.
-The probability that a fish is first caught on pass $i$ is
-
-$$\pi_{si} = p_{si} \prod_{j < i} (1 - p_{sj})$$
-
-Conditional on the total catch, $T_s = \sum_i y_{si}$, the counts are
-multinomial with probabilities $\pi_{si} / P_s$, where
-$P_s = \sum_i \pi_{si}$ is the cumulative capture probability. This
-gives the log likelihood
-
-$$\ell = \sum_s \left( \sum_i y_{si} \log \pi_{si} - T_s \log P_s \right)$$
-
-which does not depend on the unknown number of fish at the site. Capture
-probability is modelled on the logit scale
-
-$$\text{logit}(p_{si}) = \mathbf{x}_{si}^\top \boldsymbol{\beta} + \mathbf{z}_{si}^\top \mathbf{b}, \qquad b_k \sim N(0, \sigma_{g(k)}^2)$$
-
-where $\boldsymbol{\beta}$ are fixed effects and $\mathbf{b}$ are
-optional random effects, for example for visit and sample, with one
-standard deviation $\sigma_g$ for each random effect term. The random
-effects are integrated out of the likelihood using the Laplace
-approximation, and the fixed effects and standard deviations are
-estimated by maximum likelihood using
-[RTMB](https://cran.r-project.org/package=RTMB).
-
-Fish density is then estimated by dividing the total catch by the area
-fished and the cumulative capture probability: $T_s / (A_s P_s)$.
+[![Build
+Status](https://travis-ci.org/Faskally/ef.svg?branch=tmb)](https://travis-ci.org/Faskally/ef)
 
 ## installation
 
-To install the `ef` package from r-universe run
-
-``` r
-install.packages("ef", repos = c('https://faskally.r-universe.dev', 'https://cloud.r-project.org'))
-```
-
-or to install the latest development version from GitHub run
+To install the latest version `ef` package run
 
 ``` r
 remotes::install_github("faskally/ef")
@@ -55,7 +18,8 @@ remotes::install_github("faskally/ef")
 Create a factor for pass with separate levels for the first and
 subsequent passes. NOTE: Assuming the second and third pass have the
 same capture probability avoids problems with model identifiability
-([Millar *et al*., 2016](https://doi.org/10.1016/j.fishres.2016.01.001))
+([Millar *et al*.,
+2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017))
 
 ``` r
 ef_data$pass12 <- factor(replace(ef_data$pass, ef_data$pass > 2, 2))
@@ -74,8 +38,8 @@ ef_data$sampleID <-
   )
 ```
 
-Create a visitID for unique site visits. This is used to include between
-visit variation as a random effect (see below).
+Create a visitID for unique site visits. This is required by the
+overdispersion function (see below).
 
 ``` r
 ef_data$visitID <- factor(paste(ef_data$date, ef_data$siteID))
@@ -90,10 +54,12 @@ ef_data$fyear <- factor(ef_data$year)
 # Fit a Model
 
 Fit a simple model. This contains a factor for pass (2 levels),
-lifestage (2 levels), site (3 levels) and year (5 levels). Continuous
-variables can be added as linear or smooth terms, see below and [Millar
-*et al*., 2016](https://doi.org/10.1016/j.fishres.2016.01.001) for
-further details.
+lifestage (2 levels), site (3 levels) and year (5 levels). With a larger
+dataset it would also be possible to add continuous variables as linear
+or smoothed terms providing the degrees of freedom are specified
+(typically up to k=3 (2 d.f.), see [Millar *et al*.,
+2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017)
+for further details)
 
 ``` r
 m1 <-
@@ -128,181 +94,22 @@ m1 <-
     ## Degrees of Freedom: 90 Total (i.e. Null);  81 Residual
     ## AIC: 3188
 
-# Smooth Terms
-
-Smooth terms are penalised, and the amount of smoothing is estimated. A
-smooth is fitted as a random effect: the part of the smooth that is not
-penalised is a fixed effect, and the standard deviation of the random
-part controls how smooth the term is.
-
-The recommended smooths are first and second order random walks. These
-use the Markov random field (`mrf`) basis from `mgcv` with a penalty
-created by `rw_penalty()`. Both the basis and the penalty are sparse, so
-these models are quick to fit even when the walk has many steps.
-
-- a first order random walk (`order = 1`) penalises the differences
-  between neighbouring levels and shrinks towards a constant
-- a second order random walk (`order = 2`) penalises the second
-  differences and shrinks towards a linear trend
-
-The covariate must be a factor whose levels are the steps of the walk,
-in order. Here the year factor is replaced by a first order random walk
-over years.
-
-``` r
-rw1 <- rw_penalty(levels(ef_data$fyear), order = 1)
-
-m1_smooth <-
-  efp(
-    count ~ siteID + s(fyear, bs = "mrf", xt = list(penalty = rw1)) +
-      pass12 + lifestage,
-    data = ef_data, pass = pass, id = sampleID
-  )
-```
-
-    ## 
-    ## Call:
-    ## efp(formula = count ~ siteID + s(fyear, bs = "mrf", xt = list(penalty = rw1)) + 
-    ##     pass12 + lifestage, data = ef_data, pass = pass, id = sampleID)
-    ## 
-    ## Formula:
-    ## count ~ siteID + s(fyear, bs = "mrf", xt = list(penalty = rw1)) + 
-    ##     pass12 + lifestage
-    ## 
-    ## Random effects:
-    ##                Estimate Std. Error
-    ## sigma s(fyear)    0.192     0.1239
-    ## 
-    ## Coefficients:
-    ##               Estimate Std. Error z value Pr(>|z^2|)
-    ## (Intercept)    0.59939     0.1565  3.8304  1.279e-04
-    ## siteIDSite2    0.08302     0.1345  0.6171  5.371e-01
-    ## siteIDSite3   -0.02424     0.1466 -0.1653  8.687e-01
-    ## pass122       -0.24364     0.1309 -1.8614  6.269e-02
-    ## lifestageParr  0.59448     0.1160  5.1239  2.993e-07
-    ## 
-    ## Degrees of Freedom: 90 Total (i.e. Null);  84 Residual
-    ## AIC: 3193
-
-The standard deviation, `sigma s(fyear)`, is that of the steps of the
-random walk on the logit scale. The starting value of the walk is a
-fixed effect, so the intercept is for the first year.
-
-The smooth effect of year on capture probability, here for the first
-pass for fry at Site1, with approximate 95% confidence intervals
-
-``` r
-newdata <-
-  data.frame(
-    siteID = "Site1", pass12 = "1", lifestage = "Fry",
-    fyear = factor(levels(ef_data$fyear), levels = levels(ef_data$fyear))
-  )
-pred <- predict(m1_smooth, newdata = newdata, se.fit = TRUE)
-year <- as.numeric(levels(ef_data$fyear))
-
-plot(year, invlogit(pred$fit), type = "b", pch = 16, ylim = c(0, 1),
-     xlab = "Year", ylab = "Capture probability")
-lines(year, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
-lines(year, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
-```
-
-<img src="man/figures/README-smooth-year-1.png" alt="Line plot of capture probability by year from a first order random walk, with 95% confidence intervals"  />
-
-The models with a year factor and a random walk over years can be
-compared using AIC
-
-``` r
-AIC(m1, m1_smooth)
-```
-
-    ##           df      AIC
-    ## m1         9 3188.305
-    ## m1_smooth  6 3192.599
-
-A random walk can have steps with no data, for example a walk over every
-day of the year when sites were only fished on some of them. All the
-steps are included in the penalty, and the factor is given the same
-levels. Here a second order random walk is used for day of the year
-(`doy`).
-
-``` r
-days <- min(ef_data$doy):max(ef_data$doy)
-ef_data$fdoy <- factor(ef_data$doy, levels = days)
-rw2 <- rw_penalty(days, order = 2)
-
-m1_doy <-
-  efp(
-    count ~ siteID + s(fdoy, bs = "mrf", xt = list(penalty = rw2)) +
-      pass12 + lifestage,
-    data = ef_data, pass = pass, id = sampleID
-  )
-```
-
-    ## 
-    ## Call:
-    ## efp(formula = count ~ siteID + s(fdoy, bs = "mrf", xt = list(penalty = rw2)) + 
-    ##     pass12 + lifestage, data = ef_data, pass = pass, id = sampleID)
-    ## 
-    ## Formula:
-    ## count ~ siteID + s(fdoy, bs = "mrf", xt = list(penalty = rw2)) + 
-    ##     pass12 + lifestage
-    ## 
-    ## Random effects:
-    ##                Estimate Std. Error
-    ## sigma s(fdoy) 3.937e-05   0.001866
-    ## 
-    ## Coefficients:
-    ##                Estimate Std. Error  z value Pr(>|z^2|)
-    ## (Intercept)    0.678300     0.1178  5.75842  8.491e-09
-    ## siteIDSite2    0.001903     0.1448  0.01314  9.895e-01
-    ## siteIDSite3   -0.158737     0.1653 -0.96058  3.368e-01
-    ## pass122       -0.254290     0.1308 -1.94349  5.196e-02
-    ## lifestageParr  0.607910     0.1135  5.35677  8.472e-08
-    ## s(fdoy).null1 -0.550210     0.3837 -1.43391  1.516e-01
-    ## 
-    ## Degrees of Freedom: 90 Total (i.e. Null);  83 Residual
-    ## AIC: 3196
-
-In this case the standard deviation is very close to zero, so the smooth
-has been shrunk to its unpenalised part, a linear trend in day of the
-year (the fixed effect `s(fdoy).null1`).
-
-``` r
-newdata <-
-  data.frame(
-    siteID = "Site1", pass12 = "1", lifestage = "Fry",
-    fdoy = factor(days, levels = days)
-  )
-pred <- predict(m1_doy, newdata = newdata, se.fit = TRUE)
-
-plot(days, invlogit(pred$fit), type = "l", ylim = c(0, 1),
-     xlab = "Day of year", ylab = "Capture probability")
-lines(days, invlogit(pred$fit - 2 * pred$se.fit), lty = 2)
-lines(days, invlogit(pred$fit + 2 * pred$se.fit), lty = 2)
-rug(ef_data$doy)
-```
-
-<img src="man/figures/README-smooth-doy-1.png" alt="Line plot of capture probability by day of the year from a second order random walk, with 95% confidence intervals"  />
-
-Any other penalised smooth from `mgcv` can be used, for example `s(doy)`
-or `te(doy, area)`, but their penalties are not sparse so they take
-longer to fit. An unpenalised regression spline, whose flexibility is
-set by its basis dimension `k`, can be fitted using `fx = TRUE`, for
-example `s(doy, k = 3, fx = TRUE)`.
-
 # Get Predicted Values for *P*
+
+The model needs to be reformatted to allow predictions (i.e. obtain *P*)
+capture probabilities, uses as.gam function.
+
+``` r
+m1_gam <- as.gam(m1)
+```
 
 Predict *P* from the model to the full dataset. Note, if all the data is
 multi-pass then can just use fitted values. However, if you want P for
 both single and multi-pass data then predict to the new dataframe
 
 ``` r
-ef_data$prob <- predict(m1, newdata = ef_data, type = "response")
+ef_data$prob <- predict.gam(m1_gam, newdata=ef_data, type = "response")
 ```
-
-Standard errors of the predictions are available using `se.fit = TRUE`.
-To use the plotting and prediction tools in `mgcv` the model can also be
-converted to a gam object using `as.gam(m1)`.
 
 # Obtain Cumulative Estimates of *P* (for estimation of densities later)
 
@@ -320,7 +127,7 @@ probs <- cast(ef_data, formula = sampleID ~ pass, value = "prob")
 ```
 
 Get cumulative capture probability by sampleID (see [Glover *et al*.,
-2018](https://doi.org/10.1016/j.ecolind.2018.05.013))
+2018](https://www.sciencedirect.com/science/article/pii/S1470160X18303534))
 
 ``` r
 probs $ prob <- apply(probs[,2:4], 1, function(x) 1 - prod(1-x))
@@ -369,94 +176,81 @@ densdata $ offset <- log(densdata $ area * densdata $ prob)
 
 Plot to check
 
-<img src="man/figures/README-density-1.png" alt="Estimated fish density by year for fry and parr at each site"  />
+![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 # Comparing Models
 
-Electrofishing count data are typically overdispersed: capture
-probability varies between visits to a site, and between samples within
-a visit, by more than the covariates can explain. This variation is
-included in the model using random effects, which are specified by
-adding `s(f, bs = "re")` terms to the formula, where `f` is a factor.
+Because electrofishing count data are typically overdispersed and
+because the modelling framework cannot incorpororate random effects, it
+it necessary to estimate the amount of overdispersion in the data and to
+account for this when comparing models.
 
-The sampleID needs to be a factor to be used as a random effect
-
-``` r
-ef_data$fsampleID <- factor(ef_data$sampleID)
-```
-
-Fit a model with visit and sample random effects
+Overdispersion is estimated by fitting a large model that captures most
+of the systematic variation in the data and comparing this to a
+visit-wise and saturated model (see [Millar *et al*.,
+2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017)):
 
 ``` r
-mfull <- efp(count ~ siteID + year + lifestage + pass12 +
-               s(visitID, bs = "re") + s(fsampleID, bs = "re"),
-             data = ef_data, pass = pass, id = sampleID)
-
-mfull
+large_model <- efp(count ~ fyear + pass12 + lifestage,
+                   data = ef_data, pass = pass, id = sampleID)
 ```
 
-    ## 
-    ## Call:
-    ## efp(formula = count ~ siteID + year + lifestage + pass12 + s(visitID, 
-    ##     bs = "re") + s(fsampleID, bs = "re"), data = ef_data, pass = pass, 
-    ##     id = sampleID)
-    ## 
-    ## Formula:
-    ## count ~ siteID + year + lifestage + pass12 + s(visitID, bs = "re") + 
-    ##     s(fsampleID, bs = "re")
-    ## 
-    ## Random effects:
-    ##                    Estimate Std. Error
-    ## sigma s(visitID)    0.01161    0.06545
-    ## sigma s(fsampleID)  0.07751    0.16450
-    ## 
-    ## Coefficients:
-    ##                Estimate Std. Error  z value Pr(>|z^2|)
-    ## (Intercept)    0.648112     0.1778  3.64471  2.677e-04
-    ## siteIDSite2    0.079936     0.1421  0.56244  5.738e-01
-    ## siteIDSite3   -0.016579     0.1556 -0.10658  9.151e-01
-    ## year2012      -0.208267     0.1798 -1.15807  2.468e-01
-    ## year2013       0.042128     0.1931  0.21814  8.273e-01
-    ## year2014       0.361853     0.1899  1.90504  5.678e-02
-    ## year2015      -0.003164     0.2172 -0.01457  9.884e-01
-    ## lifestageParr  0.588162     0.1253  4.69505  2.665e-06
-    ## pass122       -0.236059     0.1318 -1.79112  7.327e-02
-    ## 
-    ## Degrees of Freedom: 90 Total (i.e. Null);  79 Residual
-    ## AIC: 3192
-
-The estimated standard deviations of the visit and sample random effects
-(on the logit scale) are
+Use the overdispersion function in the ef package and specify the data,
+visit ID, site ID, sample ID and the large model.
 
 ``` r
-mfull$sigma
+od_estimate <- overdispersion(data = ef_data, visitID = "visitID",
+                              sampleID = "sampleID",
+                              control = list(maxit = 100),
+                              largemodel = large_model)
 ```
 
-    ##   s(visitID) s(fsampleID) 
-    ##   0.01161307   0.07751480
+    ## Saturated model start time 2023-10-10 17:02:30.602148
 
-Because the random effects are part of the likelihood, models can be
-compared directly using AIC
+    ## Saturated model duration = 0 secs
+
+    ## Site visit model start time 2023-10-10 17:02:30.800149
+
+    ## Site visit model duration = 0 secs
+
+View overdispersion estimate. The ‘disp’ column contains the estimates
+of within and between sample overdispersion. The largest of these values
+is used to adjust the BIC.
+
+``` r
+od_estimate
+```
+
+    ##                llik nparam deviance df      disp          p
+    ## saturated -1552.715     60       NA NA        NA         NA
+    ## sitevisit -1579.952     22 54.47317 38 1.4335045 0.04057796
+    ## large     -1585.472      7 11.04111 15 0.7360738 0.74967497
+
+Compare models using the adjusted BIC function (Equation 4, [Millar *et
+al*.,
+2016](https://www.sciencedirect.com/science/article/pii/S0165783616300017))
 
 - Full model
 
 ``` r
-AIC(mfull)
+mfull <- efp(count ~ siteID + year + lifestage + pass12,
+             data = ef_data, pass = pass, id = sampleID)
+
+BICadj(mfull, od_estimate)
 ```
 
-    ## [1] 3192.268
+    ## [1] 2235.949
 
 - Model without lifestage
 
 ``` r
-mlife <- efp(count ~ siteID + year + pass12 +
-               s(visitID, bs = "re") + s(fsampleID, bs = "re"),
+mlife <- efp(count ~ siteID + year + pass12,
              data = ef_data, pass = pass, id = sampleID)
 
-AIC(mlife)
+BICadj(mlife, od_estimate)
 ```
 
-    ## [1] 3206.624
+    ## [1] 2250.261
 
 ## contributing
 

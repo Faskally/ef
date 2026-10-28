@@ -12,13 +12,9 @@ transpar(par, G)
 \item{G}{The design matrix for a model}
 }
 \value{
-a vector of probabilities of length n
+a data frame
 }
 \description{
 The matrix G should be of dimension n x p,
 and the parameter vector should be length p
-}
-\examples{
-G <- cbind(1, c(0, 0, 1, 1))
-transpar(c(0.5, -0.2), G)
 }

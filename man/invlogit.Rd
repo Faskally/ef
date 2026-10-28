@@ -16,6 +16,3 @@ vector of values between 0 and 1
 This function transforms values on the logistic scale to values on
 the probability scale.
 }
-\examples{
-invlogit(c(-2, 0, 2))
-}

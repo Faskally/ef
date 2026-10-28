@@ -1,92 +1,21 @@
-#' Estimate capture probabilities from electrofishing data
+#' Estimate capture probabilites from electrofishing data
 #'
 #' This function uses the marginal likelihood of capture probabilities
 #' to estimate model parameters
 #'
 #'
-#' @param formula a formula object. Random effects are specified using
-#'   \code{s(f, bs = "re")} terms, where \code{f} is a factor, and smooths
-#'   using other \code{s()} terms, see Details.
-#' @param data a data.frame containing all relevant info
+#' @param formula a formula object
+#' @param data a data.frame containing all relavent info
 #' @param pass a vector of integers giving the pass number of the observation
 #' @param id a vector of integers identifying an observation (a set of electrofishing passes)
-#' @param offset an optional offset for the linear predictor of capture probability
+#' @param offset an possible offset for the linear predictor of capture probability
 #' @param verbose if TRUE optimiser messages are printed to the screen
+#' @param init should initialisatiom be random?
 #' @param hessian if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb
 #' @param fit if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned
-#' @param control a list of control commands to be passed to \code{\link[stats]{optim}}
-#' @param sparse if TRUE (the default) penalised smooths are set up so that
-#'   sparse bases and penalties stay sparse, see Details. If FALSE the
-#'   constrained basis and penalties from \code{mgcv} are used, which are
-#'   dense and so slower to fit.
-#' @return If \code{fit = TRUE}, an object of class \code{efp}, a list which
-#'   inherits from \code{glm}, containing among other things the fixed effect
-#'   estimates (\code{coefficients}), the random effect estimates
-#'   (\code{random}), the standard deviations of the random effects and
-#'   smooths (\code{sigma}),
-#'   the fitted capture probabilities (\code{fitted}), the log likelihood
-#'   (\code{llik}) and the variance matrix of the fixed effects (\code{Vb}).
-#'   See \code{\link{efp-methods}} for the methods available. If
-#'   \code{fit = FALSE}, a list containing the data that would be passed to
-#'   the optimiser.
-#'
-#' @references
-#' Millar, C. P., Fryer, R. J., Millidine, K. J. and Malcolm, I. A. (2016)
-#' Modelling capture probability of Atlantic salmon (Salmo salar) from a
-#' diverse national electrofishing dataset: Implications for the estimation
-#' of abundance. Fisheries Research, 177, 1-12.
-#' \doi{10.1016/j.fishres.2016.01.001}
-#'
-#' @details
-#' Random effects on the logit capture probability are included by adding
-#' \code{s(f, bs = "re")} terms to the formula, where \code{f} is a factor
-#' in \code{data}. For example, \code{s(visitID, bs = "re")} adds between
-#' visit variation and \code{s(sampleID, bs = "re")} adds between sample
-#' variation. Each term has its own standard deviation, and the
-#' random effects are integrated out of the likelihood using the Laplace
-#' approximation, so that \code{logLik} and \code{AIC} are based on the marginal
-#' likelihood. Fitted values are conditional on the estimated random effects.
-#'
-#' Smooth terms can also be included in the formula. These are penalised,
-#' and the amount of smoothing is estimated: a smooth is fitted as a random
-#' effect, in which the part of the smooth that is not penalised (for example
-#' a linear trend) is a fixed effect, and the standard deviation of the
-#' random part controls how smooth the term is. A standard deviation close to
-#' zero means that only the unpenalised part of the smooth is needed. As for
-#' other random effects, \code{logLik} and \code{AIC} are based on the
-#' marginal likelihood.
-#'
-#' The recommended smooths are first and second order random walks, using
-#' the Markov random field basis of \code{mgcv} with a penalty from
-#' \code{\link{rw_penalty}}:
-#' \code{s(f, bs = "mrf", xt = list(penalty = rw_penalty(levels(f))))},
-#' where \code{f} is a factor whose levels are the steps of the walk. The
-#' basis and the penalty are sparse, and are kept sparse when fitting, so
-#' these models are quick to fit even when there are many levels. The
-#' standard deviation is that of the steps of the random walk, and the
-#' starting values of the walk (the first level for a first order walk, the
-#' first two for a second order walk) are fixed effects: this means that the
-#' intercept is the logit capture probability at the first level of the
-#' walk, and that a second order walk has an additional fixed effect for its
-#' linear trend, which is on an arbitrary scale.
-#'
-#' Any other penalised smooth from \code{mgcv} can be used, such as
-#' \code{s(x)} or \code{te(x, z)}, but their penalties are dense so they
-#' will take longer to fit, particularly if the basis dimension \code{k} is
-#' large. To fit an unpenalised regression spline, whose flexibility is set
-#' entirely by \code{k}, use \code{fx = TRUE}, for example
-#' \code{s(x, k = 3, fx = TRUE)}.
-#'
-#' The fixed effects are estimated by maximum likelihood, so the likelihood
-#' depends slightly on how the unpenalised part of a smooth is separated
-#' from the penalised part. With \code{sparse = TRUE} one coefficient of the
-#' smooth is fixed for each function that is not penalised, as described
-#' above for random walks. With \code{sparse = FALSE}, and for smooths with
-#' \code{by} variables or models without an intercept, the identifiability
-#' constraints of \code{mgcv} are applied to the smooth first, which makes
-#' the basis and the penalty dense. The two approaches give very similar,
-#' but not identical, fits.
-#'
+#' @param sample_re should sample random effects be included
+#' @param control a list of control commands to be passed to optim
+#' @return glm type object
 #' @examples
 #' # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
 #' ef_data <- data.frame(n      = c(100, 53, 24, 50, 26, 12,
@@ -139,43 +68,17 @@
 #' out <- cbind(ef_data, p = fitted(m2, type = "p"))
 #' out
 #'
-#' # a smooth effect of a continuous covariate, day of the year, using a
-#' # second order random walk
-#' data(ef_data)
-#' ef_data$sampleID <- factor(paste(ef_data$date, ef_data$siteID,
-#'                                  ef_data$lifestage, ef_data$species))
-#' ef_data$pass12 <- factor(replace(ef_data$pass, ef_data$pass > 2, 2))
-#' days <- min(ef_data$doy):max(ef_data$doy)
-#' ef_data$fdoy <- factor(ef_data$doy, levels = days)
-#' rw2 <- rw_penalty(days, order = 2)
-#' m5 <- efp(count ~ siteID + pass12 + lifestage +
-#'             s(fdoy, bs = "mrf", xt = list(penalty = rw2)),
-#'           data = ef_data, pass = pass, id = sampleID)
-#' m5
-#'
-#' # predicted capture probability over the smooth, with standard errors
-#' newdata <- data.frame(siteID = "Site1", pass12 = "1", lifestage = "Fry",
-#'                       fdoy = factor(days, levels = days))
-#' pred <- predict(m5, newdata = newdata, type = "response", se.fit = TRUE)
-#' cbind(newdata, fit = pred$fit, se = pred$se.fit)
-#'
-#' # an unpenalised regression spline
-#' m6 <- efp(count ~ siteID + pass12 + lifestage + s(doy, k = 3, fx = TRUE),
-#'           data = ef_data, pass = pass, id = sampleID)
-#' m6
-#'
-#' @importFrom RTMB MakeADFun sdreport ADREPORT REPORT dnorm dgmrf
+#' @importFrom TMB MakeADFun sdreport
+#' @importFrom stats nlminb
+#' @importFrom Matrix sparse.model.matrix
 #' @importFrom mgcv gam
 #' @importFrom methods as
-#' @import Matrix
-#' @importFrom stats binomial
 #' @importFrom stats optim
-#' @importFrom stats ave
 #'
 #' @export
 efp <- function(formula, data = NULL, pass = pass, id = id,
-  offset = NULL, verbose = FALSE, hessian = TRUE,
-  fit = TRUE, control = list(), sparse = TRUE) {
+  offset = NULL, verbose = FALSE, init = "0", hessian = TRUE,
+  fit = TRUE, sample_re = FALSE, control = list()) {
 
   # some checks
   if (is.null(data)) stop("must supply data")
@@ -205,85 +108,43 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   colnames(G) <- Gsetup$term.names
   if (nrow(G) != nrow(data)) stop("I think there are NAs in your data, please check and remove them before rerunning.")
 
-  # identify random effects: these are the s(..., bs = "re") terms
-  is_re <- vapply(Gsetup$smooth, inherits, TRUE, what = "random.effect")
-  re_cols <- lapply(Gsetup$smooth[is_re], function(x) x$first.para:x$last.para)
-  re_cols <- as.integer(unlist(re_cols))
-
-  # set up the penalised terms: random effects and penalised smooths. Each
-  # is split into fixed effects, for the part of the term that is not
-  # penalised, and random effects
-  blocks <- smooth_setup(Gsetup, formula, sparse = sparse)
-  pen_cols <- as.integer(unlist(lapply(blocks, function(x) x$cols)))
-  fx_cols <- setdiff(seq_len(ncol(G)), pen_cols)
-  nsigma <- vapply(blocks, function(x) x$npen, 0)
-  re_labels <-
-    unlist(lapply(blocks, function(x) {
-      if (x$npen == 1) x$label else paste0(x$label, seq_len(x$npen))
-    }))
-  if (is.null(re_labels)) re_labels <- character(0)
-
-  # the fixed effects design matrix
-  X <- do.call(cbind, c(list(G[, fx_cols, drop = FALSE]), lapply(blocks, function(x) x$Xf)))
-  Z <- do.call(cbind, c(list(Matrix(0, nrow(G), 0)), lapply(blocks, function(x) x$Zu)))
-
-  # remove redundant / collinear parameters (fixed effects only)
-  qr.X <- qr(X)
-  rank.deficient <- qr.X $ pivot[abs(diag(qr.X $ qr)) < 1e-7]
+  # remove redundant / collinear parameters
+  qr.G <- qr(G)
+  rank.deficient <- qr.G $ pivot[abs(diag(qr.G $ qr)) < 1e-7]
   if (length(rank.deficient)) {
-    droppar <- paste(colnames(X)[rank.deficient], collapse = "\n\t")
+    droppar <- paste(colnames(G)[rank.deficient], collapse = "\n\t")
     warning("*** Model has ", length(rank.deficient)," too many parameter(s)!!\n    i will remove the redundant ones:\n\t", droppar, call. = FALSE)
+    Gfit <- G[,-rank.deficient]
+  } else {
+    Gfit <- G
   }
-  fx_keep <- setdiff(seq_len(ncol(X)), rank.deficient)
-  fx_cols <- setdiff(fx_cols, fx_cols[rank.deficient[rank.deficient <= length(fx_cols)]])
-
-  # the matrix which converts the model parameters (fixed then random
-  # effects) to the coefficients of the columns of G
-  nfx <- ncol(G) - length(pen_cols)
-  nX <- ncol(X)
-  triplets <- function(M, rows, cols) {
-    M <- as.matrix(M)
-    nz <- which(M != 0, arr.ind = TRUE)
-    cbind(rows[nz[, 1]], cols[nz[, 2]], M[nz])
-  }
-  to_gam <- list(cbind(setdiff(seq_len(ncol(G)), pen_cols), seq_len(nfx), rep(1, nfx)))
-  at_g <- nfx
-  at_u <- nX
-  for (i in seq_along(blocks)) {
-    block <- blocks[[i]]
-    ipar <- c(at_g + seq_len(ncol(block$Xf)), at_u + seq_len(ncol(block$Zu)))
-    to_gam <- c(to_gam, list(triplets(block$TG, block$cols, ipar)))
-    if (!is.null(block$Tint)) {
-      to_gam <- c(to_gam, list(triplets(t(block$Tint), which(colnames(G) == "(Intercept)"), ipar)))
-    }
-    # where the random effects and standard deviations are
-    blocks[[i]]$idx <- at_u - nX + seq_len(ncol(block$Zu))
-    blocks[[i]]$sig <- sum(nsigma[seq_len(i - 1)]) + seq_len(block$npen)
-    at_g <- at_g + ncol(block$Xf)
-    at_u <- at_u + ncol(block$Zu)
-  }
-  to_gam <- do.call(rbind, to_gam)
-  to_gam <-
-    sparseMatrix(
-      i = to_gam[, 1], j = to_gam[, 2], x = to_gam[, 3],
-      dims = c(ncol(G), nX + ncol(Z))
-    )
-  to_gam <- to_gam[, c(fx_keep, nX + seq_len(ncol(Z))), drop = FALSE]
-  gam_cols <- which(rowSums(abs(to_gam)) > 0)
-  Gfit <- G[, gam_cols, drop = FALSE]
 
   # get data for likelihood
   ord_output <- order(id, pass)
+  if (sample_re) {
+    stop("Not coded yet: need to ensure output is in same order as input data")
+    ord <- ord_output
+  } else {
+    ord <- 1:nrow(data)
+  }
+  
+  X <- Gfit[ord, , drop = FALSE]
+  X <- as(X, "dgTMatrix")
+  if (sample_re) {
+    Z <- sparse.model.matrix(~ factor(id[ord]) - 1)
+  } else {
+    Z <- matrix(1, nrow(X), 1)
+  }
+  Z <- as(Z, "dgTMatrix")
 
   efdat <-
     list(
-      y = Gsetup$y,
-      offset = offset,
-      sample_id = factor(id),
-      X = as(as(X[, fx_keep, drop = FALSE], "generalMatrix"), "TsparseMatrix"),
-      Z = as(as(Z, "generalMatrix"), "TsparseMatrix"),
-      re_id = as.integer(unlist(lapply(blocks, function(x) rep(x$sig[1], length(x$idx))))),
-      blocks = lapply(blocks, function(x) x[c("idx", "sig", "S", "logdet")])
+      y = Gsetup$y[ord],
+      offset = offset[ord],
+      sample_id = factor(id[ord]),
+      X = X,
+      Z = Z,
+      sample_re = as.integer(sample_re)
     )
 
   if (!fit) {
@@ -294,23 +155,36 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
     list(
       alpha = rep(0, ncol(efdat$Z)),
       beta = rep(0, ncol(efdat$X)),
-      log_sigma = rep(0, length(re_labels))
+      log_sigma = 0
     )
 
-  if (length(blocks)) {
-    rand <- "alpha"
-  } else {
+  if (sample_re == 0L) {
     rand <- NULL
+    map <- list(alpha = factor(NA), log_sigma = factor(NA))
+  } else {
+    rand <- "alpha"
+    map <- list()
   }
 
   obj <-
     MakeADFun(
-      function(params) ef_nll(params, efdat),
+      efdat,
       params,
       random = rand,
+      DLL = "ef",
+      map = map,
+      hessian = hessian,
       silent = !verbose
     )
 
+#  if (verbose) {
+#    control = list(trace = 1)
+#  } else {
+#    control = list()
+#  }
+
+  #opt <- nlminb(obj$par, obj$fn, obj$gr, control = control)
+  
   opt <- optim(obj$par, obj$fn, obj$gr, method = "BFGS", control = control)
   
   # check convergence
@@ -321,84 +195,43 @@ efp <- function(formula, data = NULL, pass = pass, id = id,
   
   # set up output object
   out <- list()
-
-  # evaluate at the optimum, this also sets the random effects to their
-  # estimates at the optimum
-  out$llik <- -1 * as.numeric(obj$fn(opt$par))
-  par_full <- obj$env$last.par
-  out$rep <- obj$report(par_full)
-
+  
   # extract transformed parameters
-  out$p <- unname(unlist(out$rep$ps))
+  out$p <- unlist(obj$report()$ps)
   # Re-order to match input data
   out$p <- out$p[order(ord_output)]
-  # probability of capture in each pass, allowing for the fish removed in
-  # previous passes
-  out$pi <- as.vector(
-    ave(out$p, factor(id), FUN = function(x) x * c(1, cumprod(1 - x)[-length(x)]))
-  )
   
   fx_pars <- grep("beta", names(opt$par))
-  out$sdrep <- sdreport(obj, getJointPrecision = hessian && length(blocks) > 0)
+  out$sdrep <- sdreport(obj)
+  out$rep <- obj$report()
   # keep data for re-fitting
   # efdat needs to be reordered to be compatible with other structures 
   out$data <- data
-  out$offset <- offset
   out$formula <- formula # for printing and summary
+  out$llik <- -1 * obj$fn(opt$par)
   out$terms <- Gsetup$terms
   out$call <- match.call()
-  out$rank <- length(opt$par)
-  out$aic <- -2 * out$llik + 2 * out$rank
+  out$aic <- -2 * out$llik + 2*ncol(Gfit)
   out$G <- G
   out$Gfit <- Gfit
-  out$fx_cols <- fx_cols
-  out$re_cols <- re_cols
-  out$gam_cols <- gam_cols
-  out$re_labels <- re_labels
   out$coefficients <- opt$par[fx_pars]
-  names(out$coefficients) <- colnames(X)[fx_keep]
-  out$random <- par_full[names(par_full) == "alpha"]
-  names(out$random) <- colnames(Z)
-  out$sigma <- exp(opt$par[names(opt$par) == "log_sigma"])
-  names(out$sigma) <- re_labels
-  # coefficients for the columns of G, used for prediction
-  out$gam_coefficients <- drop(as.matrix(to_gam %*% c(out$coefficients, out$random)))
-  names(out$gam_coefficients) <- colnames(G)
+  names(out$coefficients) <- colnames(Gfit)
   out$df.null <- nrow(G)
-  out$df.residual <- nrow(G) - out$rank
+  out$df.residual <- nrow(G) - ncol(Gfit)
+  out$rank <- ncol(Gfit)
   out$fitted <- out$p
 
   out$residuals <- rep(0, nrow(data))
   out$null.deviance <- NA
   out$deviance <- NA
   out$family <- binomial()
-  if (!hessian) {
+  if (sample_re | !hessian) {
     out$hessian <- NULL
     out$Vb <- NULL
-    out$Vp <- NULL
-  } else if (length(blocks)) {
-    # covariance of fixed and random effects
-    out$hessian <- NULL
-    V <- try(as.matrix(solve(out$sdrep$jointPrecision)))
-    if (inherits(V, "try-error")) {
-      out$Vb <- out$Vp <- V
-    } else {
-      nms <- rownames(out$sdrep$jointPrecision)
-      which_b <- which(nms == "beta")
-      which_a <- which(nms == "alpha")
-      out$Vb <- V[which_b, which_b, drop = FALSE]
-      rownames(out$Vb) <- colnames(out$Vb) <- names(out$coefficients)
-      # covariance of the coefficients of the columns of Gfit
-      keep <- c(which_b, which_a)
-      to_gam_fit <- to_gam[gam_cols, , drop = FALSE]
-      out$Vp <- as.matrix(to_gam_fit %*% V[keep, keep, drop = FALSE] %*% t(to_gam_fit))
-      rownames(out$Vp) <- colnames(out$Vp) <- colnames(Gfit)
-    }
   } else {
     out$hessian <- obj$he(opt$par)[fx_pars, fx_pars, drop = FALSE]
     rownames(out$hessian) <- colnames(out$hessian) <- colnames(Gfit)
     out$Vb <- try(solve(out$hessian))
-    out$Vp <- out$Vb
   }
 
   out$Gsetup <- Gsetup

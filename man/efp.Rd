@@ -2,7 +2,7 @@
 % Please edit documentation in R/efp.R
 \name{efp}
 \alias{efp}
-\title{Estimate capture probabilities from electrofishing data}
+\title{Estimate capture probabilites from electrofishing data}
 \usage{
 efp(
   formula,
@@ -11,103 +11,42 @@ efp(
   id = id,
   offset = NULL,
   verbose = FALSE,
+  init = "0",
   hessian = TRUE,
   fit = TRUE,
-  control = list(),
-  sparse = TRUE
+  sample_re = FALSE,
+  control = list()
 )
 }
 \arguments{
-\item{formula}{a formula object. Random effects are specified using
-\code{s(f, bs = "re")} terms, where \code{f} is a factor, and smooths
-using other \code{s()} terms, see Details.}
+\item{formula}{a formula object}
 
-\item{data}{a data.frame containing all relevant info}
+\item{data}{a data.frame containing all relavent info}
 
 \item{pass}{a vector of integers giving the pass number of the observation}
 
 \item{id}{a vector of integers identifying an observation (a set of electrofishing passes)}
 
-\item{offset}{an optional offset for the linear predictor of capture probability}
+\item{offset}{an possible offset for the linear predictor of capture probability}
 
 \item{verbose}{if TRUE optimiser messages are printed to the screen}
+
+\item{init}{should initialisatiom be random?}
 
 \item{hessian}{if TRUE the hessian is computed and the covariance matrix of the parameters is returned via Vb}
 
 \item{fit}{if TRUE model is fitted if FALSE the data that would be passed to the optimiser is returned}
 
-\item{control}{a list of control commands to be passed to \code{\link[stats]{optim}}}
+\item{sample_re}{should sample random effects be included}
 
-\item{sparse}{if TRUE (the default) penalised smooths are set up so that
-sparse bases and penalties stay sparse, see Details. If FALSE the
-constrained basis and penalties from \code{mgcv} are used, which are
-dense and so slower to fit.}
+\item{control}{a list of control commands to be passed to optim}
 }
 \value{
-If \code{fit = TRUE}, an object of class \code{efp}, a list which
-inherits from \code{glm}, containing among other things the fixed effect
-estimates (\code{coefficients}), the random effect estimates
-(\code{random}), the standard deviations of the random effects and
-smooths (\code{sigma}),
-the fitted capture probabilities (\code{fitted}), the log likelihood
-(\code{llik}) and the variance matrix of the fixed effects (\code{Vb}).
-See \code{\link{efp-methods}} for the methods available. If
-\code{fit = FALSE}, a list containing the data that would be passed to
-the optimiser.
+glm type object
 }
 \description{
 This function uses the marginal likelihood of capture probabilities
 to estimate model parameters
-}
-\details{
-Random effects on the logit capture probability are included by adding
-\code{s(f, bs = "re")} terms to the formula, where \code{f} is a factor
-in \code{data}. For example, \code{s(visitID, bs = "re")} adds between
-visit variation and \code{s(sampleID, bs = "re")} adds between sample
-variation. Each term has its own standard deviation, and the
-random effects are integrated out of the likelihood using the Laplace
-approximation, so that \code{logLik} and \code{AIC} are based on the marginal
-likelihood. Fitted values are conditional on the estimated random effects.
-
-Smooth terms can also be included in the formula. These are penalised,
-and the amount of smoothing is estimated: a smooth is fitted as a random
-effect, in which the part of the smooth that is not penalised (for example
-a linear trend) is a fixed effect, and the standard deviation of the
-random part controls how smooth the term is. A standard deviation close to
-zero means that only the unpenalised part of the smooth is needed. As for
-other random effects, \code{logLik} and \code{AIC} are based on the
-marginal likelihood.
-
-The recommended smooths are first and second order random walks, using
-the Markov random field basis of \code{mgcv} with a penalty from
-\code{\link{rw_penalty}}:
-\code{s(f, bs = "mrf", xt = list(penalty = rw_penalty(levels(f))))},
-where \code{f} is a factor whose levels are the steps of the walk. The
-basis and the penalty are sparse, and are kept sparse when fitting, so
-these models are quick to fit even when there are many levels. The
-standard deviation is that of the steps of the random walk, and the
-starting values of the walk (the first level for a first order walk, the
-first two for a second order walk) are fixed effects: this means that the
-intercept is the logit capture probability at the first level of the
-walk, and that a second order walk has an additional fixed effect for its
-linear trend, which is on an arbitrary scale.
-
-Any other penalised smooth from \code{mgcv} can be used, such as
-\code{s(x)} or \code{te(x, z)}, but their penalties are dense so they
-will take longer to fit, particularly if the basis dimension \code{k} is
-large. To fit an unpenalised regression spline, whose flexibility is set
-entirely by \code{k}, use \code{fx = TRUE}, for example
-\code{s(x, k = 3, fx = TRUE)}.
-
-The fixed effects are estimated by maximum likelihood, so the likelihood
-depends slightly on how the unpenalised part of a smooth is separated
-from the penalised part. With \code{sparse = TRUE} one coefficient of the
-smooth is fixed for each function that is not penalised, as described
-above for random walks. With \code{sparse = FALSE}, and for smooths with
-\code{by} variables or models without an intercept, the identifiability
-constraints of \code{mgcv} are applied to the smooth first, which makes
-the basis and the penalty dense. The two approaches give very similar,
-but not identical, fits.
 }
 \examples{
 # create two electrofishing site visits with 3 and 4 passes and 2 lifestages
@@ -161,36 +100,4 @@ m2 <- efp(n ~ 1 + factor(stage) + factor(replace(pass, pass> 2, 2)),
 out <- cbind(ef_data, p = fitted(m2, type = "p"))
 out
 
-# a smooth effect of a continuous covariate, day of the year, using a
-# second order random walk
-data(ef_data)
-ef_data$sampleID <- factor(paste(ef_data$date, ef_data$siteID,
-                                 ef_data$lifestage, ef_data$species))
-ef_data$pass12 <- factor(replace(ef_data$pass, ef_data$pass > 2, 2))
-days <- min(ef_data$doy):max(ef_data$doy)
-ef_data$fdoy <- factor(ef_data$doy, levels = days)
-rw2 <- rw_penalty(days, order = 2)
-m5 <- efp(count ~ siteID + pass12 + lifestage +
-            s(fdoy, bs = "mrf", xt = list(penalty = rw2)),
-          data = ef_data, pass = pass, id = sampleID)
-m5
-
-# predicted capture probability over the smooth, with standard errors
-newdata <- data.frame(siteID = "Site1", pass12 = "1", lifestage = "Fry",
-                      fdoy = factor(days, levels = days))
-pred <- predict(m5, newdata = newdata, type = "response", se.fit = TRUE)
-cbind(newdata, fit = pred$fit, se = pred$se.fit)
-
-# an unpenalised regression spline
-m6 <- efp(count ~ siteID + pass12 + lifestage + s(doy, k = 3, fx = TRUE),
-          data = ef_data, pass = pass, id = sampleID)
-m6
-
-}
-\references{
-Millar, C. P., Fryer, R. J., Millidine, K. J. and Malcolm, I. A. (2016)
-Modelling capture probability of Atlantic salmon (Salmo salar) from a
-diverse national electrofishing dataset: Implications for the estimation
-of abundance. Fisheries Research, 177, 1-12.
-\doi{10.1016/j.fishres.2016.01.001}
 }
