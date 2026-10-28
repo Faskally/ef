@@ -21,12 +21,4 @@ transpar(par, G)
 
 ## Value
 
-a vector of probabilities of length n
-
-## Examples
-
-``` r
-G <- cbind(1, c(0, 0, 1, 1))
-transpar(c(0.5, -0.2), G)
-#> [1] 0.6224593 0.6224593 0.5744425 0.5744425
-```
+a data frame

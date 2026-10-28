@@ -1,23 +1,18 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://faskally.github.io/ef/404.html</loc></url>
 <url><loc>https://faskally.github.io/ef/LICENSE-text.html</loc></url>
-<url><loc>https://faskally.github.io/ef/articles/index.html</loc></url>
-<url><loc>https://faskally.github.io/ef/articles/random-effects.html</loc></url>
-<url><loc>https://faskally.github.io/ef/articles/simulating-data.html</loc></url>
-<url><loc>https://faskally.github.io/ef/articles/smooth-terms.html</loc></url>
 <url><loc>https://faskally.github.io/ef/authors.html</loc></url>
 <url><loc>https://faskally.github.io/ef/index.html</loc></url>
 <url><loc>https://faskally.github.io/ef/news/index.html</loc></url>
+<url><loc>https://faskally.github.io/ef/reference/BICadj.html</loc></url>
 <url><loc>https://faskally.github.io/ef/reference/as.gam.html</loc></url>
 <url><loc>https://faskally.github.io/ef/reference/ef-package.html</loc></url>
 <url><loc>https://faskally.github.io/ef/reference/ef_data.html</loc></url>
-<url><loc>https://faskally.github.io/ef/reference/efp-methods.html</loc></url>
 <url><loc>https://faskally.github.io/ef/reference/efp.html</loc></url>
 <url><loc>https://faskally.github.io/ef/reference/index.html</loc></url>
 <url><loc>https://faskally.github.io/ef/reference/invlogit.html</loc></url>
 <url><loc>https://faskally.github.io/ef/reference/logit.html</loc></url>
-<url><loc>https://faskally.github.io/ef/reference/predict.efp.html</loc></url>
-<url><loc>https://faskally.github.io/ef/reference/rw_penalty.html</loc></url>
+<url><loc>https://faskally.github.io/ef/reference/overdispersion.html</loc></url>
 <url><loc>https://faskally.github.io/ef/reference/transpar.html</loc></url>
 </urlset>
 

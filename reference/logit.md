@@ -18,10 +18,3 @@ logit(p)
 ## Value
 
 vector of values between -Inf and Inf
-
-## Examples
-
-``` r
-logit(c(0.1, 0.5, 0.9))
-#> [1] -2.197225  0.000000  2.197225
-```

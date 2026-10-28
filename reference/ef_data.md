@@ -11,11 +11,11 @@ ef_data
 
 ## Format
 
-A data frame with 90 rows and 10 variables:
+A data frame with 90 rows and 9 variables:
 
 - siteID:
 
-  Unique identifier for each electrofishing site
+  Unique identifier for each elecrofishing site
 
 - year:
 
@@ -25,12 +25,7 @@ A data frame with 90 rows and 10 variables:
 
   date of data collections
 
-- doy:
-
-  day of the year of data collection, a continuous covariate which can
-  be used to fit smooth terms
-
-- EFpasscount:
+- EFpasscount::
 
   the total number of electrofishing passes
 
@@ -57,4 +52,4 @@ A data frame with 90 rows and 10 variables:
 
 ## Source
 
-<https://www.gov.scot/publications/scotland-river-temperature-monitoring-network-srtmn/>
+<https://www2.gov.scot/Topics/marine/Salmon-Trout-Coarse/Freshwater/Monitoring/temperature>
